@@ -1,0 +1,10 @@
+   Current data set:
+   NAME =	REQ_32	EXPNO =	10	PROCNO = 1
+   DU   =	Z:/nmr_data/600/Denic_REQ_NMR_spectra
+
+   Number   Integrated Region     Integral
+     1     12.264     11.699        10.00000
+     2      6.023      5.574        12.00753
+     3      3.060      3.045         9.67255
+     4      0.701      0.201         1.83032
+     5      0.083     -0.077         3.64206
