@@ -1,0 +1,65 @@
+##TITLE= Audit trail, TopSpin 3.5 pl 7
+##JCAMPDX= 5.01
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= nmrsu
+$$ C:/IVDrData/data/Denic_REQ/nmr/REQ_31/10/pdata/1/auditp.txt
+##AUDIT TRAIL=  $$ (NUMBER, WHEN, WHO, WHERE, PROCESS, VERSION, WHAT)
+(   1,<2019-03-15 12:09:37.623 -0500>,<nmrsu>,<NMR-SPECT>,<go4>,<TopSpin 3.5.7>,
+      <created by zg
+	started at 2019-03-15 12:05:29.566 -0500,
+	POWCHK enabled, PULCHK disabled,
+       configuration hash MD5:
+       07 AB B5 EE C4 EC 1E 75 E8 BA 21 24 5E 5B 62 40
+       data hash MD5: 64K
+       D7 49 43 A9 A9 C5 2E A6 2A C2 AB 8F EA 30 02 7A>)
+(   2,<2019-03-15 12:09:37.888 -0500>,<nmrsu>,<NMR-SPECT>,<audit>,<TopSpin 3.5.7>,
+      <user comment:
+       ICON-NMR User ID: SamTrack
+       data hash MD5: 64K
+       D7 49 43 A9 A9 C5 2E A6 2A C2 AB 8F EA 30 02 7A>)
+(   3,<2019-03-15 12:09:53.878 -0500>,<nmrsu>,<NMR-SPECT>,<proc1d>,<TopSpin 3.5.7>,
+      <Start of raw data processing
+       efp 1 LB = 0.3 FT_mod = 6 PKNL = 1 PHC0 = 125.1892 PHC1 = 0 SI = 128K 
+       data hash MD5: 128K
+       7E 6A EF 4A 35 43 E5 24 05 12 57 59 C5 E6 47 36>)
+$$ Z:/nmr_data/600/Denic_REQ_NMR_spectra/REQ_31/10/pdata/1/auditp.txt
+(   4,<2019-11-29 17:55:47.538 -0600>,<MFAD\m137076>,<R5039897>,<dataserver>,<TopSpin 4.0.7>,
+      <Unknown data manipulation detected
+       INTEGRAL 2019-11-29 17:54:15.811 -0600
+       DELETE [9.898;4.874]
+       data hash MD5: 128K
+       DE 28 AF 84 B3 95 82 12 E1 09 F2 C4 08 BB B4 FD>)
+(   5,<2019-11-29 17:55:47.562 -0600>,<MFAD\m137076>,<R5039897>,<dataserver>,<TopSpin 4.0.7>,
+      <INTEGRAL 2019-11-29 17:54:15.811 -0600
+       DELETE [4.874;-0.601]
+       data hash MD5: 128K
+       DE 28 AF 84 B3 95 82 12 E1 09 F2 C4 08 BB B4 FD>)
+(   6,<2019-11-29 17:55:47.586 -0600>,<MFAD\m137076>,<R5039897>,<dataserver>,<TopSpin 4.0.7>,
+      <INTEGRAL 2019-11-29 17:54:19.615 -0600
+       IMPORT protein_TSP
+       data hash MD5: 128K
+       DE 28 AF 84 B3 95 82 12 E1 09 F2 C4 08 BB B4 FD>)
+(   7,<2019-11-29 17:55:47.610 -0600>,<MFAD\m137076>,<R5039897>,<dataserver>,<TopSpin 4.0.7>,
+      <INTEGRAL 2019-11-29 17:55:14.829 -0600
+       BIAS_SLOPE_CHANGED [0.083;-0.077]
+       data hash MD5: 128K
+       DE 28 AF 84 B3 95 82 12 E1 09 F2 C4 08 BB B4 FD>)
+(   8,<2019-12-10 11:31:32.287 -0600>,<MFAD\m137076>,<R5039897>,<dataserver>,<TopSpin 4.0.7>,
+      <INTEGRAL 2019-12-10 11:31:18.826 -0600
+       DEFINE [6.069;5.573]
+       data hash MD5: 128K
+       DE 28 AF 84 B3 95 82 12 E1 09 F2 C4 08 BB B4 FD>)
+(   9,<2019-12-10 12:43:04.851 -0600>,<MFAD\m137076>,<R5039897>,<dataserver>,<TopSpin 4.0.7>,
+      <INTEGRAL 2019-12-10 12:42:45.484 -0600
+       DEFINE [3.072;3.053]
+       data hash MD5: 128K
+       DE 28 AF 84 B3 95 82 12 E1 09 F2 C4 08 BB B4 FD>)
+(  10,<2019-12-10 12:45:31.335 -0600>,<MFAD\m137076>,<R5039897>,<dataserver>,<TopSpin 4.0.7>,
+      <INTEGRAL 2019-12-10 12:45:23.912 -0600
+       DEFINE [4.084;4.063]
+       data hash MD5: 128K
+       DE 28 AF 84 B3 95 82 12 E1 09 F2 C4 08 BB B4 FD>)
+##END=
+
+$$ hash MD5
+$$ AA AF E4 8C 41 CD 3F 7C 58 8B 5C 8C 05 C0 45 BB

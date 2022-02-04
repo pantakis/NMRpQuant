@@ -1,0 +1,23 @@
+##TITLE= Audit trail, TopSpin 3.5 pl 7
+##JCAMPDX= 5.01
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= nmrsu
+$$ C:/IVDrData/data/Denic_REQ/nmr/REQ_30/10/audita.txt
+##AUDIT TRAIL=  $$ (NUMBER, WHEN, WHO, WHERE, PROCESS, VERSION, WHAT)
+(   1,<2018-12-18 20:17:29.524 -0600>,<nmrsu>,<NMR-SPECT>,<go4>,<TopSpin 3.5.7>,
+      <created by zg
+	started at 2018-12-18 20:13:21.436 -0600,
+	POWCHK enabled, PULCHK disabled,
+       configuration hash MD5:
+       07 AB B5 EE C4 EC 1E 75 E8 BA 21 24 5E 5B 62 40
+       data hash MD5: 64K
+       7B AB 7F 21 C0 62 7B 8A 4A 3C CF 19 72 B2 62 B4>)
+(   2,<2018-12-18 20:17:29.664 -0600>,<nmrsu>,<NMR-SPECT>,<audit>,<TopSpin 3.5.7>,
+      <user comment:
+       ICON-NMR User ID: SamTrack
+       data hash MD5: 64K
+       7B AB 7F 21 C0 62 7B 8A 4A 3C CF 19 72 B2 62 B4>)
+##END=
+
+$$ hash MD5
+$$ 98 97 86 C0 BE 0F 55 5D 78 08 92 FE AB BB 57 AE

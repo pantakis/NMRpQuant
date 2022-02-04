@@ -1,0 +1,11 @@
+##TITLE= Parameter file, TopSpin 4.0.6
+##JCAMPDX= 5.0
+##DATATYPE= Parameter Values
+##NPOINTS= 4	$$ modification sequence number
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= m137076
+$$ 2019-04-05 16:07:33.795 -0500  MFAD\m137076@R5039897
+$$ Z:/nmr_data/600/Denic_REQ_cpmg/REQ_33/1/pdata/1/assocs
+$$ process C:\Bruker\TopSpin4.0.6\prog\mod\dataserver.exe
+##$MULTDISP= <Z:/nmr_data/600/Denic_REQ_cpmg/REQ_02/10/pdata/3|null>
+##END=

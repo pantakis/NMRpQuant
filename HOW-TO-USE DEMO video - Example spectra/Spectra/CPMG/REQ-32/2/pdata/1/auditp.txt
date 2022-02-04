@@ -1,0 +1,38 @@
+##TITLE= Audit trail, TopSpin 3.5 pl 7
+##JCAMPDX= 5.01
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= dzejp
+$$ C:/DATA/ivan/Denic/REQ_32/1/pdata/1/auditp.txt
+##AUDIT TRAIL=  $$ (NUMBER, WHEN, WHO, WHERE, PROCESS, VERSION, WHAT)
+(   1,<2019-03-17 12:50:42.621 -0500>,<dzejp>,<NMR-SPECT>,<go4>,<TopSpin 3.5.7>,
+      <created by zg
+	started at 2019-03-17 12:46:32.397 -0500,
+	POWCHK disabled, PULCHK disabled,
+       configuration hash MD5:
+       80 95 EB 79 B3 51 EE 16 14 82 70 F5 1B 38 84 E0
+       data hash MD5: 64K
+       D6 57 EC E1 42 00 A6 ED 35 3B C7 20 A0 3A 77 AB>)
+(   2,<2019-03-17 12:50:42.777 -0500>,<dzejp>,<NMR-SPECT>,<audit>,<TopSpin 3.5.7>,
+      <user comment:
+       ICON-NMR User ID: dzejp
+       data hash MD5: 64K
+       D6 57 EC E1 42 00 A6 ED 35 3B C7 20 A0 3A 77 AB>)
+(   3,<2019-03-17 12:50:44.759 -0500>,<dzejp>,<NMR-SPECT>,<proc1d>,<TopSpin 3.5.7>,
+      <Start of raw data processing
+       efp LB = 0.3 FT_mod = 6 PKNL = 1 PHC0 = 0 PHC1 = 1.344268 SI = 64K 
+       data hash MD5: 64K
+       72 5F BE A7 A4 CE EA 28 09 BA 2F 8E 5F 01 AA 04>)
+(   4,<2019-03-17 12:50:45.164 -0500>,<dzejp>,<NMR-SPECT>,<proc1d>,<TopSpin 3.5.7>,
+      <pk PHC0 = -59.4635 PHC1 = 0 
+       data hash MD5: 64K
+       60 69 94 EE EB 5D B3 52 3F 5F 1A 1E 14 9C B7 84>)
+$$ /Users/panteleimontakis/Library/Mobile Documents/com~apple~CloudDocs/Eggrafa/PROSWPIKA/CVs/Imp/Proteinuria_platform/Mayo_cpmg_batch_1/REQ_32/2/pdata/1/auditp.txt
+(   5,<2021-10-02 16:41:54.656 +0100>,<panteleimontakis>,<PantelemonsMini>,<proc1d>,<TopSpin 4.1.1>,
+      <Start of raw data processing
+       efp LB = 0.3 FT_mod = 6 PKNL = 1 PHC0 = -59.4635 PHC1 = 1.344268 SI = 128K 
+       data hash MD5: 128K
+       90 E6 18 C6 26 D9 DA 39 70 FF 65 F8 A7 7D 2D F9>)
+##END=
+
+$$ hash MD5
+$$ B0 CD EC B0 F8 02 9D A2 AC C6 A0 E1 04 AE 18 2E

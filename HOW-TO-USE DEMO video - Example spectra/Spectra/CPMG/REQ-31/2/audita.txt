@@ -1,0 +1,23 @@
+##TITLE= Audit trail, TopSpin 3.5 pl 7
+##JCAMPDX= 5.01
+##ORIGIN= Bruker BioSpin GmbH
+##OWNER= dzejp
+$$ C:/DATA/ivan/Denic/REQ_31/1/audita.txt
+##AUDIT TRAIL=  $$ (NUMBER, WHEN, WHO, WHERE, PROCESS, VERSION, WHAT)
+(   1,<2019-03-17 12:33:09.152 -0500>,<dzejp>,<NMR-SPECT>,<go4>,<TopSpin 3.5.7>,
+      <created by zg
+	started at 2019-03-17 12:28:59.021 -0500,
+	POWCHK disabled, PULCHK disabled,
+       configuration hash MD5:
+       80 95 EB 79 B3 51 EE 16 14 82 70 F5 1B 38 84 E0
+       data hash MD5: 64K
+       3C 8E 5B 6A FD FA 77 8E 87 3F 0A 1C 7A 93 CE 7F>)
+(   2,<2019-03-17 12:33:09.417 -0500>,<dzejp>,<NMR-SPECT>,<audit>,<TopSpin 3.5.7>,
+      <user comment:
+       ICON-NMR User ID: dzejp
+       data hash MD5: 64K
+       3C 8E 5B 6A FD FA 77 8E 87 3F 0A 1C 7A 93 CE 7F>)
+##END=
+
+$$ hash MD5
+$$ 9A AE 9A 3D C2 68 67 20 F7 45 70 2F 2B FD 08 BC

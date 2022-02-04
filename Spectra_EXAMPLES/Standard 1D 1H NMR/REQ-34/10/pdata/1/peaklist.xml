@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<PeakList>
-  <PeakList1D>
-    <PeakList1DHeader creator="m137076" date="2019-11-29T13:39:46" expNo="10" name="REQ_34" owner="" procNo="1" source="Z:/nmr_data/600/Denic_REQ_NMR_spectra">
-      <PeakPickDetails>F1=8.472041ppm, F2=8.469260ppm, MI=0.27cm, MAXI=0.41cm, PC=1.000
-      </PeakPickDetails>
-    </PeakList1DHeader>
-  </PeakList1D>
-</PeakList>
