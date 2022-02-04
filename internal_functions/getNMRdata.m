@@ -1,11 +1,21 @@
 function [NMRdata] = getNMRdata(Folder1r1iprocs)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Copyright to Dr. Panteleimon G. Takis, 2019                           % 
+% Copyright to Dr. Panteleimon G. Takis, 2022                           % 
 %                                                                       %
 % National Phenome Centre and Imperial Clinical Phenotyping Centre,     %
 % Department of Metabolism, Digestion and Reproduction, IRDB Building,  %
 % Imperial College London, Hammersmith Campus,                          %
 % London, W12 0NN, United Kingdom                                       %
+%                                                                       %
+% This program is distributed in the hope that it will be useful,       %
+% but WITHOUT ANY WARRANTY; without even the implied warranty of        %
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         %
+% GNU General Public License for more details.                          %
+%                                                                       %
+% You should have received a copy of the GNU General Public License     %
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.%
+%                                                                       %    
+% Email: p.takis@imperial.ac.uk                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Reading the real and inaginary part of processed 1D NMR spectra:
@@ -14,7 +24,13 @@ function [NMRdata] = getNMRdata(Folder1r1iprocs)
 % Folder1r1iprocs: The NMR folder containing the '1r', '1i', 'procs' files
 % for each spectrum. 
 %
-% Last Updated: 12/09/2021  
+% Outputs 
+% NMRdata: Structure containing PPM vector (NMRdata.XAxis), 
+%          Intensity Real (NMRdata.Data) and
+%          Intensity Imaginary data vectors (NMRdata.IData)
+
+%
+% Last Updated: 12/01/2022  
 %
 % Algorithm contains also adapted parts from rbnmr.m function:
 %

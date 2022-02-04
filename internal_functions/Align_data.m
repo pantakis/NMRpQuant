@@ -1,7 +1,7 @@
 function YOutput = Align_data(X,Y,center,radius)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Copyright to Dr. Panteleimon G. Takis, 2020                           % 
+% Copyright to Dr. Panteleimon G. Takis, 2022                           % 
 %                                                                       %
 % National Phenome Centre and Imperial Clinical Phenotyping Centre,     %
 % Department of Metabolism, Digestion and Reproduction, IRDB Building,  %
@@ -23,13 +23,18 @@ function YOutput = Align_data(X,Y,center,radius)
 % Email: p.takis@imperial.ac.uk                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% 
+% Peak Calibration algorithm of processed 1D NMR spectra to a reference
+% value taking into account the highest intesity peak in hte defined
+% spectra region.
 % 
 % Inputs
-% X: PPM data of each spectrum.
-% Y: Spectral data of each spectrum.
+% X: PPM data vector
+% Y: Intenstity data vector
+% center: PPM value for calibrating ref. peak 
+% Radius: ± PPM value for searching the max intensity peak from the center
 %
-%
+% Outputs
+% YOutput: Calibrated Intensity data vector at a ref. PPM position
 %
 %
 
@@ -81,7 +86,7 @@ end
 
 function y_data = Circulate_shiftNMR(x_data,ppm_points)
 
-% Adapted by dr. P.G. Takis from:
+% Adapted by Dr. Panteleimon G. Takis from:
 %
 % FSHIFT Fractional circular shift
 %   Syntax:

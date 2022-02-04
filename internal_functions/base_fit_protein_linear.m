@@ -1,5 +1,47 @@
 function [ycorr,yfit] = base_fit_protein_linear(y,varargin)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Copyright to Dr. Panteleimon G. Takis, 2022                           % 
+%                                                                       %
+% National Phenome Centre and Imperial Clinical Phenotyping Centre,     %
+% Department of Metabolism, Digestion and Reproduction, IRDB Building,  %
+% Imperial College London, Hammersmith Campus,                          %
+% London, W12 0NN, United Kingdom                                       %
+%                                                                       %
+% This program is distributed in the hope that it will be useful,       %
+% but WITHOUT ANY WARRANTY; without even the implied warranty of        %
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         %
+% GNU General Public License for more details.                          %
+%                                                                       %
+% You should have received a copy of the GNU General Public License     %
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.%
+%                                                                       %    
+% Email: p.takis@imperial.ac.uk                                         %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Fitting spectral baseline by linear interpolation
+% 
+% Inputs
+% y: Intensity data for each spectral region 
+% varargin: 1) interpolation method (herein linear) 
+%           2) index of points for linear fitting of y data
+%
+% Outputs
+% ycorr: residuals data vector
+% yfit: Fitted baseline data 
+%
+%
+% Last Updated: 15/01/2022  
+%
+%
+
+% Adapted from bf.m (Mirko Hrovat (2022). Baseline Fit (https://www.mathworks.com/matlabcentral/
+% fileexchange/24916-baseline-fit), MATLAB Central File Exchange. Retrieved February 4, 2022.)
+% Copyright 2009 Mirtech, Inc.
+% Created by    Mirko Hrovat    08/01/2009  contact:mhrovat@email.com
+
+
+
 def_method  = 'linear';
 def_avgpts  = 3;
 

@@ -1,5 +1,50 @@
 function [SMolESY_original,SMolESY_Processed_final,SMolESY_filtered1D] = NMRpQuant_SMolESY(X,Y,Y_imag,X_processed,Y_imag_processed,ref_position,radius)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Copyright to Dr. Panteleimon G. Takis, 2022                           % 
+%                                                                       %
+% National Phenome Centre and Imperial Clinical Phenotyping Centre,     %
+% Department of Metabolism, Digestion and Reproduction, IRDB Building,  %
+% Imperial College London, Hammersmith Campus,                          %
+% London, W12 0NN, United Kingdom                                       %
+%                                                                       %
+% This program is distributed in the hope that it will be useful,       %
+% but WITHOUT ANY WARRANTY; without even the implied warranty of        %
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         %
+% GNU General Public License for more details.                          %
+%                                                                       %
+% You should have received a copy of the GNU General Public License     %
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.%
+%                                                                       %    
+% Email: p.takis@imperial.ac.uk                                         %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Applying SMolESY filtering and produce SMolESY filter (i.e. modified
+% SMolESY)
+% 
+% 
+% Inputs
+% X: PPM vector
+% Y: Original Intensity Real data vector
+% Y_imag: Original Intensity Imaginary data vector
+% X_processed: PPM vector from the reprocessed NMR data (by new lb_factor)
+% Y_imag_processed: Intensity Imaginary data vector from Reprocessed NMR data (by new lb_factor)  
+% ref_position: PPM value to align Original and Reprocessed NMR data (e.g. 0 when using TSP)
+% radius: ±PPM value for searching/picking maximum peak (i.e. Ref Peak, e.g. TSP) to align NMR data
+%
+%
+% Outputs 
+% SMolESY_original: SMolESY data vector from the Original Imaginary data
+%                   vector
+% SMolESY_Processed_final: ABSOLUTE SMolESY data vector from the Re-processed 
+%                          Imaginary data vector         
+% SMolESY_filtered1D: Intensity data of the "SMolESY_Processed_final" vector subtraction 
+%                     from Orignal Intensity data vector
+%
+%
+% Last Updated: 12/01/2022  
+
+
 
 SMolESY_temp_Processed = gradient(Y_imag_processed,X_processed);
             

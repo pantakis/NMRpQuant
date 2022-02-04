@@ -1,20 +1,39 @@
-function [NMRdata_Processed] = Process_lb_NMRdata(Folder1r1iprocs,lb_factor)%FAC,lb_factor)
+function [NMRdata_Processed] = Process_lb_NMRdata(Folder1r1iprocs,lb_factor)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Copyright to Dr. Panteleimon G. Takis, 2019                           % 
+% Copyright to Dr. Panteleimon G. Takis, 2022                           % 
 %                                                                       %
 % National Phenome Centre and Imperial Clinical Phenotyping Centre,     %
 % Department of Metabolism, Digestion and Reproduction, IRDB Building,  %
 % Imperial College London, Hammersmith Campus,                          %
 % London, W12 0NN, United Kingdom                                       %
+%                                                                       %
+% This program is distributed in the hope that it will be useful,       %
+% but WITHOUT ANY WARRANTY; without even the implied warranty of        %
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         %
+% GNU General Public License for more details.                          %
+%                                                                       %
+% You should have received a copy of the GNU General Public License     %
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.%
+%                                                                       %    
+% Email: p.takis@imperial.ac.uk                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Reading the real and inaginary part of processed 1D NMR spectra:
+% Reading the real and inaginary part of processed 1D NMR spectra and 
+% re-process with a different resolution
 % 
 % Inputs
 % Folder1r1iprocs: The NMR folder containing the '1r', '1i', 'procs' files
-% for each spectrum. 
+%                  for each spectrum. 
+% lb_factor: Line broadening mulitplication factor of the original lb value
+%            read from the loaded NMR spectrum raw data 
 %
-% Last Updated: 12/09/2021  
+% Outputs 
+% NMRdata_Processed: Structure containing PPM vector (NMRdata_Processed.XAxis), 
+%          and reprocessed Intensity Real (NMRdata_Processed.Data),
+%          Imaginary data vectors (NMRdata_Processed.IData)
+%          
+%
+% Last Updated: 12/12/2021  
 %
 % Algorithm contains also adapted parts from rbnmr.m function:
 %
