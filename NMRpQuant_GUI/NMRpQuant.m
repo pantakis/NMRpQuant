@@ -42,7 +42,7 @@ function varargout = NMRpQuant(varargin)
 
 % Edit the above text to modify the response to help NMRpQuant
 
-% Last Modified by GUIDE v2.5 21-Jan-2022 15:35:17
+% Last Modified by GUIDE v2.5 20-Apr-2022 13:28:01
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -77,7 +77,7 @@ Icon = imresize(Image, [64, 64]);
 
 hM = uimenu('parent',hObject,'Label','Help');
 hM2 = uimenu('parent',hObject,'Label','Downloads/Examples');
-uimenu(hM,'Label','About the toolbox','Callback',@(~,~)msgbox({'NMRpQuant', 'Version: 1.0', 'License: GNU GPL v3',...
+uimenu(hM,'Label','About the toolbox','Callback',@(~,~)msgbox({'NMRpQuant', 'Version: 1.1', 'License: GNU GPL v3',...
     'Author: Dr. Panteleimon G. Takis','Contact: p.takis@imperial.ac.uk',...
     'National Phenome Centre','Imperial College London'},'About','custom',Icon));
 uimenu(hM,'Label','Please also read-cite this article','Callback',@(~,~)web('https://doi.org/10.1021/acs.analchem.1c01618'));
@@ -124,6 +124,30 @@ handles.ParentCPMG_folder = [];
 handles.IND_SPECTRA_selection = [];
 set(handles.SpectraNAMESTABLE,'Data',[]); % Use the set command to change the uitable properties.
 set(handles.SpectraNAMESTABLE,'ColumnName',{'Spectra Titles   '})
+handles.hZoom = [];
+handles.hZoom2 = [];
+handles.hZoom3 = [];
+handles.axesLimitsNCD_and_or_SMolESY_filtered = [];
+handles.axesLimitsSMolESY_processed_and_or_CPMG = [];
+handles.axesLimitsStandard1D_plot = [];
+% 
+% f1 = handles.Standard1D_plot.Children;
+% zoomonbutton = uicontrol('Parent', f1, ...
+% 'Style', 'pushbutton', ...
+% 'Units', 'Normalized', ...
+% 'Position', [231 11 228 22], ...
+% 'String', 'Zoom On', ...
+% 'Callback', 'zoom on' ...
+% );
+% zoomoffbutton = uicontrol('Parent', f1, ...
+% 'Style', 'pushbutton', ...
+% 'Units', 'Normalized', ...
+% 'Position', [231 11 228 22], ...
+% 'String', 'Zoom Off', ...
+% 'Callback', 'zoom off' ...
+% );
+
+
 
 set(gcf,'position',[181.06666666666666 44.897435897435905 344.2 67.61])
 old_screen=[1920,1080];
@@ -274,7 +298,7 @@ try
         parentDir1D = uigetdir;
     end
     handles.Parent1D_folder = parentDir1D;
-    list_of_spectra_1D = prepare_spectra_files1D(parentDir1D);    
+    [list_of_spectra_1D,display_names] = prepare_spectra_files1D(parentDir1D);    
     if num2str(length(list_of_spectra_1D)) > 1
         uiwait(msgbox(['The software found ' num2str(length(list_of_spectra_1D)) ' spectra.'],'modal'));
     elseif num2str(length(list_of_spectra_1D)) == 1
@@ -356,7 +380,7 @@ try
             
         catch
             G11 = fullfile(parentDir1D,list_of_spectra_1D{i});
-            Subfolders = prepare_spectra_files1D(G11);
+            [Subfolders,~] = prepare_spectra_files1D(G11);
             G2 = fullfile(G11,Subfolders{1},'pdata','1');
             W(i,1) = getNMRdata(G2);
             Y1D(i,:) = W(i,1).Data';
@@ -421,7 +445,8 @@ try
     
     handles.Y1D = Y1D;        
     handles.X1D = X1D;       
-    handles.Samples_titles1D = list_of_spectra_1D;        
+    handles.Samples_titles1D = list_of_spectra_1D; 
+    handles.DISP_NAMES = display_names;
     handles.PASS_Standard1D = 1;
     
     % test_the_spectra Quality - production
@@ -442,7 +467,7 @@ try
         handles.Integrals_Baseline_fit = Tot_protein_Relative;
 
         str1 = "NMR Standard 1D & SMolESY & Protein signal extraction from 0.2-0.5 ppm data are successfully read/produced and loaded on the software.";
-        handles.NOTIFICATIONS_BOX.String = str1 + newline + "Please proceed with plotting the 1D spectra and the next STEPS." + newline + "You could check fitting results in 'OUTPUT FOLDER/..._filter_figures' folders.";
+        handles.NOTIFICATIONS_BOX.String = str1 + newline + "Please proceed with the next STEPS." + newline + "You could check fitting results in 'OUTPUT FOLDER/..._filter_figures' folders.";
     
     elseif ~isempty(find(PASS_SMolESY_test == 0)) && ~isempty(find(PASS_Fitted_base_test == 0))
     
@@ -488,11 +513,22 @@ try
     if i == size(list_of_spectra_1D,1)
         DIKA = waitbar2a(i/size(list_of_spectra_1D,1),handles.Progress,['NMR spectra Loading/Processing is completed.'],'g');
     end
-
-
+    
+    delete(findall(handles.Standard1D_plot,'type','text'))
+    delete(findall(handles.NCD_and_or_SMolESY_filtered,'type','text'))
+    delete(findall(handles.SMolESY_processed_and_or_CPMG,'type','text'))
     set(handles.SpectraNAMESTABLE,'Data',handles.Samples_titles1D); % Use the set command to change the uitable properties.    
-
     set (handles.SpectraNAMESTABLE, 'CellSelectionCallback', @cb_select)
+
+    if handles.PASS_Standard1D == 1
+        axes(handles.Standard1D_plot);plot(handles.X1D',handles.Y1D');set(gca,'XDir','reverse');
+        set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
+        set(handles.Standard1D_plot.Children,'LineWidth',0.5);
+        handles.INITaxesLimitsStandard1D_plot = get(handles.Standard1D_plot,{'xlim','ylim'});
+    else
+        uiwait(msgbox('There are no Standard 1D 1H NMR spectra.','modal'));    
+        handles.NOTIFICATIONS_BOX.String = "ERROR: The Standard 1D 1H NMR spectra cannot be plotted. Please try loading them.";   
+    end
 
     
 catch
@@ -525,10 +561,16 @@ function cb_select(hObject,evt)
     set (handles.Standard1D_plot.Children, 'ButtonDownFcn', @showTitleOFF)    
     set(handles.NCD_and_or_SMolESY_filtered.Children,'LineWidth',0.5);
     set (handles.NCD_and_or_SMolESY_filtered.Children, 'ButtonDownFcn', @showTitleOFF)
-    set (handles.SMolESY_processed_and_or_CPMG.Children, 'ButtonDownFcn', @showTitleOFF)    
-    handles.TitlesStatus.String = 'Titles: OFF';
-    handles.TitlesStatusONE.String = 'Titles: OFF';
-    handles.TitlesStatusTHREE.String = 'Titles: OFF';
+    set (handles.SMolESY_processed_and_or_CPMG.Children, 'ButtonDownFcn', @showTitleOFF)
+    set(handles.DispOnONE,'ForegroundColor','black');
+    set(handles.DispOFFOne,'ForegroundColor','green');
+    set(handles.DispTitleON,'ForegroundColor','black');
+    set(handles.DispTitleOFF,'ForegroundColor','green');
+    set(handles.DispONTHREE,'ForegroundColor','black');
+    set(handles.DispOFFTHree,'ForegroundColor','green');
+%     handles.TitlesStatus.String = 'Titles: OFF';
+%     handles.TitlesStatusONE.String = 'Titles: OFF';
+%     handles.TitlesStatusTHREE.String = 'Titles: OFF';
     for i = 1:length(handles.Standard1D_plot.Children)
         currentlinesorder1D{i,1} = handles.Standard1D_plot.Children(i).DisplayName;
         try
@@ -565,14 +607,9 @@ function loadCPMG_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-
-
-
 handles.Check_CPMG_plot = 0;
 handles.Int_NCD_export_FLAG = 0; 
 handles.PASS_CPMG = 0;
-
-
 
 if handles.MethodFLAG == 1 || handles.MethodFLAG == 4  
     [filepath,~,~] = fileparts(handles.Parent1D_folder);
@@ -586,7 +623,7 @@ if handles.MethodFLAG == 1 || handles.MethodFLAG == 4
         parentDir1D_NCD = uigetdir;        
     end
     handles.ParentCPMG_folder = parentDir1D_NCD;     
-    list_of_spectra_1D_CPMG = prepare_spectra_files1D(parentDir1D_NCD);
+    [list_of_spectra_1D_CPMG,~] = prepare_spectra_files1D(parentDir1D_NCD);
     mkdir(fullfile(handles.Results_folder_path,'NCD_filter_figures','region 0.2-0.7 ppm'))
     mkdir(fullfile(handles.Results_folder_path,'NCD_filter_figures','region 0.2-0.5 ppm'))
     mkdir(fullfile(handles.Results_folder_path,'NCD_filter_figures','region 8.0-10.0 ppm'))
@@ -635,7 +672,7 @@ if handles.MethodFLAG == 1 || handles.MethodFLAG == 4
 
                     catch
                         G11 = fullfile(parentDir1D_NCD,list_of_spectra_1D_CPMG{i});
-                        Subfolders = prepare_spectra_files1D(G11);
+                        [Subfolders,~] = prepare_spectra_files1D(G11);
                         G2 = fullfile(G11,Subfolders{1},'pdata','1');
                         W(i,1) = getNMRdata(G2);
                         Y1D(i,:) = W(i,1).Data';                
@@ -740,12 +777,12 @@ elseif handles.MethodFLAG == 4
             cla(handles.NCD_and_or_SMolESY_filtered,'reset');
             cla(handles.Standard1D_plot,'reset');
             axes(handles.Standard1D_plot);plot(handles.X1D',handles.Y1D');set(gca,'XDir','reverse');
-            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
+            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
             axes(handles.SMolESY_processed_and_or_CPMG); plot(handles.X1D',handles.CPMG_Y1D');set(gca,'xdir','reverse');
             axes(handles.NCD_and_or_SMolESY_filtered); plot(handles.X1D',handles.NCDspectra');set(gca,'xdir','reverse')
             
-            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)));
-            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)));
+            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)));
+            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)));
             set(handles.SMolESY_processed_and_or_CPMG.Children,'LineWidth',0.5);
             set(handles.Standard1D_plot.Children,'LineWidth',0.5);
             set(handles.NCD_and_or_SMolESY_filtered.Children,'LineWidth',0.5);
@@ -761,12 +798,12 @@ elseif handles.MethodFLAG == 4
             cla(handles.NCD_and_or_SMolESY_filtered,'reset');
             cla(handles.Standard1D_plot,'reset');
             axes(handles.Standard1D_plot);plot(handles.X1D',handles.Y1D');set(gca,'XDir','reverse');
-            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
+            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
             axes(handles.SMolESY_processed_and_or_CPMG); plot(handles.X1D',handles.SMolESY_Processed_final');set(gca,'xdir','reverse')
             axes(handles.NCD_and_or_SMolESY_filtered); plot(handles.X1D',handles.SMolESY_filtered1D');set(gca,'xdir','reverse')
             linkaxes([handles.SMolESY_processed_and_or_CPMG handles.Standard1D_plot handles.NCD_and_or_SMolESY_filtered], 'xy')                        
-            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)));
-            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)));
+            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)));
+            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)));
             set(handles.SMolESY_processed_and_or_CPMG.Children,'LineWidth',0.5);
             set(handles.NCD_and_or_SMolESY_filtered.Children,'LineWidth',0.5);
             set(handles.Standard1D_plot.Children,'LineWidth',0.5);
@@ -779,7 +816,7 @@ elseif handles.MethodFLAG == 4
             cla(handles.NCD_and_or_SMolESY_filtered,'reset');
             cla(handles.Standard1D_plot,'reset');
             axes(handles.Standard1D_plot);plot(handles.X1D',handles.Y1D');set(gca,'XDir','reverse');
-            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
+            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
             axes(handles.SMolESY_processed_and_or_CPMG);
             for i = 1:length(handles.Samples_titles1D)                
                 plot(handles.X_fit(i).data,handles.fitted_baseline(i).data);set(gca,'xdir','reverse');hold on;
@@ -794,8 +831,8 @@ elseif handles.MethodFLAG == 4
             xlim([0.2 0.5]);
             %hold off
             linkaxes([handles.SMolESY_processed_and_or_CPMG handles.Standard1D_plot handles.NCD_and_or_SMolESY_filtered], 'x');           
-            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
-            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
+            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
+            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
             set(handles.SMolESY_processed_and_or_CPMG.Children,'LineWidth',0.5);
             set(handles.NCD_and_or_SMolESY_filtered.Children,'LineWidth',0.5);
         else
@@ -817,12 +854,12 @@ elseif handles.MethodFLAG == 1
             cla(handles.NCD_and_or_SMolESY_filtered,'reset');
             cla(handles.Standard1D_plot,'reset');
             axes(handles.Standard1D_plot);plot(handles.X1D',handles.Y1D');set(gca,'XDir','reverse');
-            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
+            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
             axes(handles.SMolESY_processed_and_or_CPMG); plot(handles.X1D',handles.CPMG_Y1D');set(gca,'xdir','reverse')
             axes(handles.NCD_and_or_SMolESY_filtered); plot(handles.X1D',handles.NCDspectra');set(gca,'xdir','reverse')
             linkaxes([handles.SMolESY_processed_and_or_CPMG handles.Standard1D_plot handles.NCD_and_or_SMolESY_filtered], 'xy')
-            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
-            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
+            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
+            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
             set(handles.SMolESY_processed_and_or_CPMG.Children,'LineWidth',0.5);
             set(handles.NCD_and_or_SMolESY_filtered.Children,'LineWidth',0.5);
             set(handles.Standard1D_plot.Children,'LineWidth',0.5);
@@ -844,12 +881,12 @@ elseif handles.MethodFLAG == 2
             cla(handles.NCD_and_or_SMolESY_filtered,'reset');
             cla(handles.Standard1D_plot,'reset');
             axes(handles.Standard1D_plot);plot(handles.X1D',handles.Y1D');set(gca,'XDir','reverse');
-            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
+            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
             axes(handles.SMolESY_processed_and_or_CPMG); plot(handles.X1D',handles.SMolESY_Processed_final');set(gca,'xdir','reverse');
             axes(handles.NCD_and_or_SMolESY_filtered); plot(handles.X1D',handles.SMolESY_filtered1D');set(gca,'xdir','reverse')
             linkaxes([handles.SMolESY_processed_and_or_CPMG handles.Standard1D_plot handles.NCD_and_or_SMolESY_filtered], 'xy')
-            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
-            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
+            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
+            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
             set(handles.SMolESY_processed_and_or_CPMG.Children,'LineWidth',0.5);
             set(handles.NCD_and_or_SMolESY_filtered.Children,'LineWidth',0.5);
             set(handles.Standard1D_plot.Children,'LineWidth',0.5);
@@ -871,7 +908,7 @@ elseif handles.MethodFLAG == 3
             cla(handles.NCD_and_or_SMolESY_filtered,'reset');
             cla(handles.Standard1D_plot,'reset');
             axes(handles.Standard1D_plot);plot(handles.X1D',handles.Y1D');set(gca,'XDir','reverse');
-            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
+            set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
             axes(handles.SMolESY_processed_and_or_CPMG);
             for i = 1:length(handles.Samples_titles1D)
                 plot(handles.X_fit(i).data,handles.fitted_baseline(i).data);set(gca,'xdir','reverse');hold on;
@@ -884,8 +921,8 @@ elseif handles.MethodFLAG == 3
             
             %hold off
             linkaxes([handles.SMolESY_processed_and_or_CPMG handles.Standard1D_plot handles.NCD_and_or_SMolESY_filtered], 'x');xlim([0.2 0.5]);
-            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
-            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
+            set (handles.SMolESY_processed_and_or_CPMG.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
+            set (handles.NCD_and_or_SMolESY_filtered.Children, {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
             set(handles.SMolESY_processed_and_or_CPMG.Children,'LineWidth',0.5);
             set(handles.NCD_and_or_SMolESY_filtered.Children,'LineWidth',0.5);
             set(handles.Standard1D_plot.Children,'LineWidth',0.5);
@@ -902,27 +939,27 @@ guidata(hObject, handles);
 
 
 % --- Executes on button press in Plot1D.
-function Plot1D_Callback(hObject, eventdata, handles)
-% hObject    handle to Plot1D (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-delete(findall(handles.Standard1D_plot,'type','text'))
-delete(findall(handles.NCD_and_or_SMolESY_filtered,'type','text'))
-delete(findall(handles.SMolESY_processed_and_or_CPMG,'type','text'))
-set(handles.SpectraNAMESTABLE,'Data',handles.Samples_titles1D); % Use the set command to change the uitable properties.    
-set (handles.SpectraNAMESTABLE, 'CellSelectionCallback', @cb_select)
-if handles.PASS_Standard1D == 1
-        axes(handles.Standard1D_plot);plot(handles.X1D',handles.Y1D');set(gca,'XDir','reverse');
-        set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
-        set(handles.Standard1D_plot.Children,'LineWidth',0.5);        
-else
-    uiwait(msgbox('There are no Standard 1D 1H NMR spectra.','modal'));    
-    handles.NOTIFICATIONS_BOX.String = "ERROR: The Standard 1D 1H NMR spectra cannot be plotted. Please try loading them.";   
-end
-%handles.MAX_Y_ALL = max(handles.Y1D(:));
-guidata(hObject, handles);
+% function Plot1D_Callback(hObject, eventdata, handles)
+% % hObject    handle to Plot1D (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% 
+% 
+% delete(findall(handles.Standard1D_plot,'type','text'))
+% delete(findall(handles.NCD_and_or_SMolESY_filtered,'type','text'))
+% delete(findall(handles.SMolESY_processed_and_or_CPMG,'type','text'))
+% set(handles.SpectraNAMESTABLE,'Data',handles.Samples_titles1D); % Use the set command to change the uitable properties.    
+% set (handles.SpectraNAMESTABLE, 'CellSelectionCallback', @cb_select)
+% if handles.PASS_Standard1D == 1
+%         axes(handles.Standard1D_plot);plot(handles.X1D',handles.Y1D');set(gca,'XDir','reverse');
+%         set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.Samples_titles1D(:)))
+%         set(handles.Standard1D_plot.Children,'LineWidth',0.5);        
+% else
+%     uiwait(msgbox('There are no Standard 1D 1H NMR spectra.','modal'));    
+%     handles.NOTIFICATIONS_BOX.String = "ERROR: The Standard 1D 1H NMR spectra cannot be plotted. Please try loading them.";   
+% end
+% %handles.MAX_Y_ALL = max(handles.Y1D(:));
+% guidata(hObject, handles);
 
 
 % --- Executes on button press in UseBuiltInCurves.
@@ -970,7 +1007,7 @@ if handles.AskNEWCurve.Value == 1
     try    
         [excel pathexcel] = uigetfile('*.xlsx');
         
-        wb = waitbar(0, ['\bf \fontsize{12} Please wait for loading the excel file...']);
+        wb = waitbar(0, ['\bf \fontsize{12} Please wait for loading the excel file...'],'windowstyle', 'alwaysontop');
         wbc = allchild(wb);
         jp = wbc(1).JavaPeer;
         wbc(1).JavaPeer.setForeground(wbc(1).JavaPeer.getForeground.cyan);
@@ -989,21 +1026,21 @@ if handles.AskNEWCurve.Value == 1
         handles.absIntregion = num(1:2,1)';
         handles.absConRef = num(3,1);
         if sum(handles.absfactors) == 0
-            figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+            figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
             close(figHandles);
             str1 = "ERROR: You have not provided any calibration factor for absolute quantification. Please check the template file provided with the software.";
             handles.NOTIFICATIONS_BOX.String = str1;
             handles.GoforABS = 0;
             handles.AskNEWCurve.Value = 0;
         elseif sum(abs(handles.absIntregion)) == 0
-            figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+            figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
             close(figHandles);
             str1 = "ERROR: You have not provided correctly the region for reference signal integration. Please check the template file provided with the software.";
             handles.NOTIFICATIONS_BOX.String = str1;
             handles.GoforABS = 0;
             handles.AskNEWCurve.Value = 0;
         elseif sum(handles.absConRef) == 0
-            figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+            figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
             close(figHandles);
             str1 = "ERROR: You have not provided correctly the concentration represented by the reference signal. Please check the template file provided with the software.";
             handles.NOTIFICATIONS_BOX.String = str1;
@@ -1015,14 +1052,14 @@ if handles.AskNEWCurve.Value == 1
             for i = 1:length(handles.Samples_titles1D)
                 handles.QREF_Int(i,1) = find_region_integrate(handles.X1D(i,:),handles.Y1D(i,:),handles.absIntregion);
             end  
-            figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+            figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
             close(figHandles);
             str1 = "Excel file is successfully loaded.";
             handles.NOTIFICATIONS_BOX.String = str1;            
         end
         
     catch
-        figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+        figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
         close(figHandles);
         str1 = "ERROR: Excel file is not loaded correctly. Please check the template file provided with the software.";
         handles.NOTIFICATIONS_BOX.String = str1;
@@ -1132,20 +1169,13 @@ end
 guidata(hObject, handles);
 
 
-% --- Executes on button press in CalcInt.
-function CalcInt_Callback(hObject, eventdata, handles)
-% hObject    handle to CalcInt (see GCBO)
+% --- Executes on button press in ExportRESULTS.
+function ExportRESULTS_Callback(hObject, eventdata, handles)
+% hObject    handle to ExportRESULTS (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-try
-    wb = waitbar(0, ['\bf \fontsize{12} Please wait for the integration process completion...']);
-    wbc = allchild(wb);
-    jp = wbc(1).JavaPeer;
-    wbc(1).JavaPeer.setForeground(wbc(1).JavaPeer.getForeground.cyan);
-    jp.setIndeterminate(1);    
-    
-    if handles.MethodFLAG == 3 && handles.PASS_Fitted_base == 1
+if handles.MethodFLAG == 3 && handles.PASS_Fitted_base == 1
         try 
             if handles.GoforABS == 0 || handles.absfactors(1,1) == 0 
                 handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fit,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (a.u.): Prot. sig. extr. method'});
@@ -1166,18 +1196,367 @@ try
                 handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fit,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (a.u.): Prot. sig. extr. method'});
                 handles.Int_baseline_export_FLAG = 1;
             end
-
         catch
-
             uiwait(msgbox('ERROR: Please check the selected method and if the filtered data are produced.','modal'));
             handles.Int_baseline_export_FLAG = 0;
-            figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+            figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
             close(figHandles);
             str1 = "Integration process was not completed successfully.";    
             handles.NOTIFICATIONS_BOX.String = str1;
         end
+elseif handles.MethodFLAG == 4 && handles.PASS_SMolESY == 1 && handles.PASS_CPMG == 1 && handles.PASS_Fitted_base == 1
+        try 
+            if handles.GoforABS == 0 || handles.absfactors(1,1) == 0 
+                handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fit,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (a.u.): Prot. sig. extr. method'});
+                handles.Int_baseline_export_FLAG = 1;
+            elseif handles.GoforABS == 1 && handles.absfactors(1,1) > 0
+                handles.Integrals_Baseline_fitF = (handles.Integrals_Baseline_fit*handles.absConRef*handles.absfactors(1,1))./handles.QREF_Int;
+                handles.Integrals_Baseline_fitF = round(handles.Integrals_Baseline_fitF,4);
+                if handles.absfactorsError(1,1) > 0
+                    ERROR = handles.Integrals_Baseline_fitF*handles.absfactorsError(1,1);
+                    ERROR = round(ERROR,4);
+                else
+                    ERROR(1:length(handles.Integrals_Baseline_fit),1) = NaN;
+                end                
+                handles.Integrals_Baseline_fitFF = [handles.Integrals_Baseline_fitF ERROR];
+                handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fitFF,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (mg/mL): Prot. sig. extr. method' '+/- Error (mg/mL): Prot. sig. extr. method'});
+                handles.Int_baseline_export_FLAG = 1;                    
+            else
+                handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fit,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (a.u.): Prot. sig. extr. method'});
+                handles.Int_baseline_export_FLAG = 1;
+            end     
+        catch
+            uiwait(msgbox('ERROR: Please check the selected method and if the filtered data are produced.','modal'));
+            handles.Int_baseline_export_FLAG = 0;
+            figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+            close(figHandles);
+            str1 = "Integration process was not completed successfully.";    
+            handles.NOTIFICATIONS_BOX.String = str1;
+        end
+end        
 
-    elseif handles.MethodFLAG == 1 && handles.PASS_CPMG == 1
+try
+    
+    wb = waitbar(0, ['\bf \fontsize{12} Please wait for exporting results...'],'windowstyle', 'alwaysontop');
+    wbc = allchild(wb);
+    jp = wbc(1).JavaPeer;
+    wbc(1).JavaPeer.setForeground(wbc(1).JavaPeer.getForeground.cyan);
+    jp.setIndeterminate(1);    
+    
+    switch handles.MethodFLAG
+        case 0
+            uiwait(msgbox('ERROR: There is no data to be exported, select an appropriate method in STEP 2 and proceed accordingly.','modal'));
+        case 1
+            if handles.Int_NCD_export_FLAG == 1
+                fig = uifigure('Name','NCD_based_protein_concentration','Position',[100 100 752 250]);
+                fig.WindowStyle = 'alwaysontop';
+                RESULTS_TABLE = uitable('Parent',fig,'Position',[25 50 700 200]);
+                D = handles.Int_NCD_export.Properties.VariableNames;
+                Index = find(contains(D,':'));
+                for i = 1:length(Index)
+                    K = D(Index(i));
+                    D(Index(i)) = {strrep(char(K{1}),':',':|')};
+                end
+                clearvars K Index
+                Index = find(contains(D,'Protein'));
+                for i = 1:length(Index)
+                    K = D(Index(i));
+                    D(Index(i)) = {strrep(char(K{1}),'Total Protein','Total Protein|')};
+                end
+                set(RESULTS_TABLE,'ColumnName',[{'NMR Spectra / Total Protein| (a.u and/or mg/mL) per region -->'} D]);
+                set(RESULTS_TABLE,'Data',[handles.Samples_titles1D table2cell(handles.Int_NCD_export)]);
+                clearvars K D Index
+                handles.Int_NCD_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';                                
+                writetable(handles.Int_NCD_export,fullfile(handles.Results_folder_path,['NCD_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
+                figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+                close(figHandles);
+                str1 = ['Integration results are exported in the following file: ' fullfile(handles.Results_folder_path,'NCD_based_protein_concentration.csv')];    
+                handles.NOTIFICATIONS_BOX.String = str1;            
+            else
+                figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+                close(figHandles);
+                uiwait(msgbox('ERROR: There is no data to be exported. Please select NCD or ALL methods in STEP 2 and load the mandatory spectra.','modal'));
+                str1 = "ERROR: There is no data to be exported. Please select NCD or ALL methods in STEP 2 and load the mandatory spectra.";    
+                handles.NOTIFICATIONS_BOX.String = str1;
+            end
+        case 2
+            if handles.Int_SMolESYfiltered_export_FLAG == 1
+                fig = uifigure('Name','SMolESY-filtering_based_protein_concentration','Position',[100 100 752 250]);
+                fig.WindowStyle = 'alwaysontop';
+                RESULTS_TABLE = uitable('Parent',fig,'Position',[25 50 700 200]);
+                D = handles.Int_SMolESYfiltered_export.Properties.VariableNames;
+                Index = find(contains(D,':'));
+                for i = 1:length(Index)
+                    K = D(Index(i));
+                    D(Index(i)) = {strrep(char(K{1}),':',':|')};
+                end
+                clearvars K Index
+                Index = find(contains(D,'Protein'));
+                for i = 1:length(Index)
+                    K = D(Index(i));
+                    D(Index(i)) = {strrep(char(K{1}),'Total Protein','Total Protein|')};
+                end
+                set(RESULTS_TABLE,'ColumnName',[{'NMR Spectra / Total Protein| (a.u and/or mg/mL) per region -->'} D]);
+                set(RESULTS_TABLE,'Data',[handles.Samples_titles1D table2cell(handles.Int_SMolESYfiltered_export)]);
+                clearvars K D Index
+                handles.Int_SMolESYfiltered_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';                
+                writetable(handles.Int_SMolESYfiltered_export,fullfile(handles.Results_folder_path,['SMolESY-filtering_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
+                figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+                close(figHandles);
+                str1 = ['Integration results are exported in the following file: ' fullfile(handles.Results_folder_path,'SMolESY-filtering_based_protein_concentration.csv')];    
+                handles.NOTIFICATIONS_BOX.String = str1;            
+            else
+                figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+                close(figHandles);
+                uiwait(msgbox('ERROR: There is no data to be exported. Please select SMolESY-filtering or ALL methods in STEP 2.','modal'));
+                str1 = "ERROR: There is no data to be exported. Please select SMolESY-filtering or ALL methods in STEP 2 or check if SMolESY data are successfully produced in STEP 1.";    
+                handles.NOTIFICATIONS_BOX.String = str1;
+            end
+        case 3
+            if handles.Int_baseline_export_FLAG == 1
+                fig = uifigure('Name','Protein_signal_extraction_(0.2-0.5ppm)_based_protein_concentration','Position',[100 100 752 250]);
+                fig.WindowStyle = 'alwaysontop';
+                RESULTS_TABLE = uitable('Parent',fig,'Position',[25 50 700 200]);
+                D = handles.Int_baseline_export.Properties.VariableNames;
+                Index = find(contains(D,':'));
+                for i = 1:length(Index)
+                    K = D(Index(i));
+                    D(Index(i)) = {strrep(char(K{1}),':',':|')};
+                end
+                clearvars K Index
+                Index = find(contains(D,'Protein'));
+                for i = 1:length(Index)
+                    K = D(Index(i));
+                    D(Index(i)) = {strrep(char(K{1}),'Total Protein','Total Protein|')};
+                end               
+                set(RESULTS_TABLE,'ColumnName',[{'NMR Spectra / Total Protein| (a.u and/or mg/mL) per region -->'} D]);
+                set(RESULTS_TABLE,'Data',[handles.Samples_titles1D table2cell(handles.Int_baseline_export)]);
+                clearvars K D Index
+
+                handles.Int_baseline_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';                
+                writetable(handles.Int_baseline_export,fullfile(handles.Results_folder_path,['Protein_signal_extraction_(0.2-0.5ppm)_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
+                figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+                close(figHandles);
+                str1 = ['Integration results are exported in the following file: ' fullfile(handles.Results_folder_path,'Protein_signal_extraction_(0.2-0.5ppm)_based_protein_concentration.csv')];    
+                handles.NOTIFICATIONS_BOX.String = str1;
+            else
+                figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+                close(figHandles);
+                uiwait(msgbox('ERROR: There is no data to be exported. Please select Protein signal extraction from 0.2-0.5 ppm or ALL methods in STEP 2.','modal'));
+                str1 = "ERROR: There is no data to be exported. Please select Protein signal extraction from 0.2-0.5 ppm or ALL methods in STEP 2 or check if Protein signal extraction from 0.2-0.5 ppm was successfully produced in STEP 1.";    
+                handles.NOTIFICATIONS_BOX.String = str1;
+            end 
+        case 4
+            if handles.Int_NCD_export_FLAG == 1 && handles.Int_baseline_export_FLAG == 1 && handles.Int_SMolESYfiltered_export_FLAG == 1
+
+                fig1 = uifigure('Name','NCD_based_protein_concentration','Position',[100 100 752 250]);
+                fig1.WindowStyle = 'alwaysontop';
+                RESULTS_TABLE1 = uitable('Parent',fig1,'Position',[25 50 700 200]);
+                D1 = handles.Int_NCD_export.Properties.VariableNames;
+                Index = find(contains(D1,':'));
+                for i = 1:length(Index)
+                    K = D1(Index(i));
+                    D1(Index(i)) = {strrep(char(K{1}),':',':|')};
+                end
+                clearvars K Index
+                Index = find(contains(D1,'Protein'));
+                for i = 1:length(Index)
+                    K = D1(Index(i));
+                    D1(Index(i)) = {strrep(char(K{1}),'Total Protein','Total Protein|')};
+                end               
+                set(RESULTS_TABLE1,'ColumnName',[{'NMR Spectra / Total Protein| (a.u and/or mg/mL) per region -->'} D1]);
+                set(RESULTS_TABLE1,'Data',[handles.Samples_titles1D table2cell(handles.Int_NCD_export)]);
+                clearvars K D1 Index
+
+                fig2 = uifigure('Name','SMolESY-filtering_based_protein_concentration','Position',[100 100 752 250]);
+                fig2.WindowStyle = 'alwaysontop';
+                RESULTS_TABLE2 = uitable('Parent',fig2,'Position',[25 50 700 200]);
+                D2 = handles.Int_SMolESYfiltered_export.Properties.VariableNames;
+                Index = find(contains(D2,':'));
+                for i = 1:length(Index)
+                    K = D2(Index(i));
+                    D2(Index(i)) = {strrep(char(K{1}),':',':|')};
+                end
+                clearvars K Index
+                Index = find(contains(D2,'Protein'));
+                for i = 1:length(Index)
+                    K = D2(Index(i));
+                    D2(Index(i)) = {strrep(char(K{1}),'Total Protein','Total Protein|')};
+                end               
+
+                set(RESULTS_TABLE2,'ColumnName',[{'NMR Spectra / Total Protein| (a.u and/or mg/mL) per region -->'} D2]);
+                set(RESULTS_TABLE2,'Data',[handles.Samples_titles1D table2cell(handles.Int_SMolESYfiltered_export)]);
+
+                fig3 = uifigure('Name','Protein_signal_extraction_(0.2-0.5ppm)_based_protein_concentration','Position',[100 100 752 250]);
+                fig3.WindowStyle = 'alwaysontop';
+                RESULTS_TABLE3 = uitable('Parent',fig3,'Position',[25 50 700 200]);
+                D3 = handles.Int_baseline_export.Properties.VariableNames;
+
+                Index = find(contains(D3,':'));
+                for i = 1:length(Index)
+                    K = D3(Index(i));
+                    D3(Index(i)) = {strrep(char(K{1}),':',':|')};
+                end
+                clearvars K Index
+                Index = find(contains(D3,'Protein'));
+                for i = 1:length(Index)
+                    K = D3(Index(i));
+                    D3(Index(i)) = {strrep(char(K{1}),'Total Protein','Total Protein|')};
+                end               
+
+
+                set(RESULTS_TABLE3,'ColumnName',[{'NMR Spectra / Total Protein| (a.u and/or mg/mL) per region -->'} D3]);
+                set(RESULTS_TABLE3,'Data',[handles.Samples_titles1D table2cell(handles.Int_baseline_export)]);
+
+                
+                handles.Int_NCD_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';
+                handles.Int_SMolESYfiltered_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';                
+                handles.Int_baseline_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';                
+                
+                writetable(handles.Int_NCD_export,fullfile(handles.Results_folder_path,['NCD_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
+                writetable(handles.Int_baseline_export,fullfile(handles.Results_folder_path,['Protein_signal_extraction_(0.2-0.5ppm)_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
+                writetable(handles.Int_SMolESYfiltered_export,fullfile(handles.Results_folder_path,['SMolESY-filtering_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
+                figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+                close(figHandles);
+                str = ["Integration results are exported to [" handles.Results_folder_path "] in the following files:"];
+                str1 = join(str);
+                str2 = "1) NCD_based_protein_concentration.csv";
+                str3 = "2) Protein_signal_extraction_(0.2-0.5ppm)_based_protein_concentration.csv";
+                str4 = "3) SMolESY-filtering_based_protein_concentration.csv";
+                handles.NOTIFICATIONS_BOX.String = str1 + newline + str2 + newline + str3 + newline + str4;
+            else
+                figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+                close(figHandles);
+                uiwait(msgbox('ERROR: There is no data to be exported. Please select ALL methods in STEP 2.','modal'));
+                str1 = "ERROR: There is no data to be exported. Please select ALL methods in STEP 2 or check all filtering methods data are successfully produced. ";    
+                handles.NOTIFICATIONS_BOX.String = str1;
+            end             
+    end
+catch
+    
+    uiwait(msgbox('ERROR: There is no data to be exported. Please calculate integrals and/or absolute concentrations.','modal'));
+    figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+    close(figHandles);
+    str1 = "ERROR: There is no data to be exported. Please calculate integrals and/or absolute concentrations.";    
+    handles.NOTIFICATIONS_BOX.String = str1;
+    
+end
+
+
+% --- Executes on selection change in ChooseREGIONS_Int.
+function ChooseREGIONS_Int_Callback(hObject, eventdata, handles)
+% hObject    handle to ChooseREGIONS_Int (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns ChooseREGIONS_Int contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from ChooseREGIONS_Int
+
+
+contents = cellstr(get(hObject,'String'));
+
+if handles.MethodFLAG == 0 || handles.MethodFLAG == 3
+    
+    handles.Int_REGION_flag = 0;
+    handles.Int_REGION = 0;
+    
+    uiwait(msgbox('NCD and/or SMolESY filtered NMR spectra are needed. Please be sure that you have selected either one of these or ALL methods in STEP 2.','modal')); 
+    str1 = "ERROR: NCD and/or SMolESY filtered NMR spectra are needed. Please be sure that you have selected either one of these or ALL methods in STEP 2.";    
+    handles.NOTIFICATIONS_BOX.String = str1;
+    
+else
+    if isequal(contents{get(hObject,'Value')},'Select * spectrum region(s) for integration')
+
+        handles.Int_REGION_flag = 0;
+        handles.Int_REGION = 0;
+
+    elseif isequal(contents{get(hObject,'Value')},'0.2 - 0.5 ppm')
+
+        handles.Int_REGION_flag = 1;
+        handles.Int_REGION = [0.2 0.5];
+        
+    elseif isequal(contents{get(hObject,'Value')},'0.2 - 0.7 ppm')
+
+        handles.Int_REGION_flag = 2;
+        handles.Int_REGION = [0.2 0.7];
+        
+% 
+%     elseif isequal(contents{get(hObject,'Value')},'0.8 - 2.0 ppm')    
+% 
+%         handles.Int_REGION_flag = 3;
+%         handles.Int_REGION = [0.8 2.0];
+% 
+%     elseif isequal(contents{get(hObject,'Value')},'6.3 - 7.0 ppm')    
+% 
+%         handles.Int_REGION_flag = 4;
+%         handles.Int_REGION = [6.3 7.0];
+
+    elseif isequal(contents{get(hObject,'Value')},'8.0 - 10.0 ppm')    
+
+%         handles.Int_REGION_flag = 5;
+        handles.Int_REGION_flag = 3;
+        handles.Int_REGION = [8.0 10.0];
+        
+
+    elseif isequal(contents{get(hObject,'Value')},'All the above')
+
+%         handles.Int_REGION_flag = 6;
+        handles.Int_REGION_flag = 4;
+        %handles.Int_REGION = [0.2 0.5; 0.2 0.7; 0.8 2.0; 6.3 7.0; 8.0 10.0];
+        handles.Int_REGION = [0.2 0.5; 0.2 0.7; 8.0 10.0];
+        
+    else
+        uiwait(msgbox('NCD and/or SMolESY filtered NMR spectra are needed. Please be sure that you have selected either one of these or ALL methods in STEP 2.','modal'));
+        str1 = "ERROR: NCD and/or SMolESY filtered NMR spectra are needed. Please be sure that you have selected either one of these or ALL methods in STEP 2.";    
+        handles.NOTIFICATIONS_BOX.String = str1;
+        handles.Int_REGION_flag = 0;
+        handles.Int_REGION = 0;
+    end
+    
+end
+
+
+try
+    wb = waitbar(0, ['\bf \fontsize{12} Please wait for the integration process completion...'],'windowstyle', 'alwaysontop');
+    wbc = allchild(wb);
+    jp = wbc(1).JavaPeer;
+    wbc(1).JavaPeer.setForeground(wbc(1).JavaPeer.getForeground.cyan);
+    jp.setIndeterminate(1);    
+    
+%     if handles.MethodFLAG == 3 && handles.PASS_Fitted_base == 1
+%         try 
+%             if handles.GoforABS == 0 || handles.absfactors(1,1) == 0 
+%                 handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fit,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (a.u.): Prot. sig. extr. method'});
+%                 handles.Int_baseline_export_FLAG = 1;
+%             elseif handles.GoforABS == 1 && handles.absfactors(1,1) > 0
+%                 handles.Integrals_Baseline_fitF = (handles.Integrals_Baseline_fit*handles.absConRef*handles.absfactors(1,1))./handles.QREF_Int;
+%                 handles.Integrals_Baseline_fitF = round(handles.Integrals_Baseline_fitF,4);
+%                 if handles.absfactorsError(1,1) > 0
+%                     ERROR = handles.Integrals_Baseline_fitF*handles.absfactorsError(1,1);
+%                     ERROR = round(ERROR,4);
+%                 else
+%                     ERROR(1:length(handles.Integrals_Baseline_fit),1) = NaN;
+%                 end                
+%                 handles.Integrals_Baseline_fitFF = [handles.Integrals_Baseline_fitF ERROR];
+%                 handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fitFF,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (mg/mL): Prot. sig. extr. method' '+/- Error (mg/mL): Prot. sig. extr. method'});
+%                 handles.Int_baseline_export_FLAG = 1;                    
+%             else
+%                 handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fit,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (a.u.): Prot. sig. extr. method'});
+%                 handles.Int_baseline_export_FLAG = 1;
+%             end
+% 
+%         catch
+% 
+%             uiwait(msgbox('ERROR: Please check the selected method and if the filtered data are produced.','modal'));
+%             handles.Int_baseline_export_FLAG = 0;
+%             figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+%             close(figHandles);
+%             str1 = "Integration process was not completed successfully.";    
+%             handles.NOTIFICATIONS_BOX.String = str1;
+%         end
+
+% else
+    if handles.MethodFLAG == 1 && handles.PASS_CPMG == 1
         try
             for i = 1:length(handles.Samples_titles1D)
                     Integral_temp_NCD = NMRpQuant_NCD_SMolESY_method_integration(handles.X1D(i,:),handles.NCDspectra(i,:), handles.Int_REGION);
@@ -1292,7 +1671,7 @@ try
         catch
             handles.Int_NCD_export_FLAG = 0;
             uiwait(msgbox('ERROR: Please check the selected method and if the filtered data are produced.','modal'));
-            figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+            figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
             close(figHandles);
             str1 = "Integration process was not completed successfully.";    
             handles.NOTIFICATIONS_BOX.String = str1;
@@ -1412,7 +1791,7 @@ try
         catch        
             handles.Int_SMolESYfiltered_export_FLAG = 0;
             uiwait(msgbox('ERROR: Please check the selected method and if the filtered data are produced.','modal'));
-            figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+            figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
             close(figHandles);
             str1 = "Integration process was not completed successfully.";    
             handles.NOTIFICATIONS_BOX.String = str1;
@@ -1420,25 +1799,25 @@ try
 
     elseif handles.MethodFLAG == 4 && handles.PASS_SMolESY == 1 && handles.PASS_CPMG == 1 && handles.PASS_Fitted_base == 1
         try 
-            if handles.GoforABS == 0 || handles.absfactors(1,1) == 0 
-                handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fit,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (a.u.): Prot. sig. extr. method'});
-                handles.Int_baseline_export_FLAG = 1;
-            elseif handles.GoforABS == 1 && handles.absfactors(1,1) > 0
-                handles.Integrals_Baseline_fitF = (handles.Integrals_Baseline_fit*handles.absConRef*handles.absfactors(1,1))./handles.QREF_Int;
-                handles.Integrals_Baseline_fitF = round(handles.Integrals_Baseline_fitF,4);
-                if handles.absfactorsError(1,1) > 0
-                    ERROR = handles.Integrals_Baseline_fitF*handles.absfactorsError(1,1);
-                    ERROR = round(ERROR,4);
-                else
-                    ERROR(1:length(handles.Integrals_Baseline_fit),1) = NaN;
-                end                
-                handles.Integrals_Baseline_fitFF = [handles.Integrals_Baseline_fitF ERROR];
-                handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fitFF,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (mg/mL): Prot. sig. extr. method' '+/- Error (mg/mL): Prot. sig. extr. method'});
-                handles.Int_baseline_export_FLAG = 1;                    
-            else
-                handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fit,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (a.u.): Prot. sig. extr. method'});
-                handles.Int_baseline_export_FLAG = 1;
-            end
+%             if handles.GoforABS == 0 || handles.absfactors(1,1) == 0 
+%                 handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fit,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (a.u.): Prot. sig. extr. method'});
+%                 handles.Int_baseline_export_FLAG = 1;
+%             elseif handles.GoforABS == 1 && handles.absfactors(1,1) > 0
+%                 handles.Integrals_Baseline_fitF = (handles.Integrals_Baseline_fit*handles.absConRef*handles.absfactors(1,1))./handles.QREF_Int;
+%                 handles.Integrals_Baseline_fitF = round(handles.Integrals_Baseline_fitF,4);
+%                 if handles.absfactorsError(1,1) > 0
+%                     ERROR = handles.Integrals_Baseline_fitF*handles.absfactorsError(1,1);
+%                     ERROR = round(ERROR,4);
+%                 else
+%                     ERROR(1:length(handles.Integrals_Baseline_fit),1) = NaN;
+%                 end                
+%                 handles.Integrals_Baseline_fitFF = [handles.Integrals_Baseline_fitF ERROR];
+%                 handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fitFF,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (mg/mL): Prot. sig. extr. method' '+/- Error (mg/mL): Prot. sig. extr. method'});
+%                 handles.Int_baseline_export_FLAG = 1;                    
+%             else
+%                 handles.Int_baseline_export = array2table(handles.Integrals_Baseline_fit,'RowNames',handles.Samples_titles1D,'VariableNames',{'Total Protein concentration (a.u.): Prot. sig. extr. method'});
+%                 handles.Int_baseline_export_FLAG = 1;
+%             end
 
 
             for i = 1:length(handles.Samples_titles1D)
@@ -1665,14 +2044,14 @@ try
             handles.Int_NCD_export = Int_NCD_export;
             handles.Int_SMolESYfiltered_export = Int_SMolESYfiltered_export;            
             handles.Int_NCD_export_FLAG = 1; 
-            handles.Int_baseline_export_FLAG = 1;
+            %handles.Int_baseline_export_FLAG = 1;
             handles.Int_SMolESYfiltered_export_FLAG = 1;    
         catch
             handles.Int_NCD_export_FLAG = 0; 
-            handles.Int_baseline_export_FLAG = 0;
+            %handles.Int_baseline_export_FLAG = 0;
             handles.Int_SMolESYfiltered_export_FLAG = 0;
             uiwait(msgbox('ERROR: Please check the selected method and if the filtered data are produced.','modal'));       
-            figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+            figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
             close(figHandles);
             str1 = "Integration process was not completed successfully.";    
             handles.NOTIFICATIONS_BOX.String = str1;
@@ -1682,12 +2061,12 @@ try
        handles.Int_baseline_export_FLAG = 0;
        handles.Int_SMolESYfiltered_export_FLAG = 0;
        uiwait(msgbox('ERROR: Please check the selected method and if the filtered data are produced.','modal'));       
-       figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+       figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
        close(figHandles);
        str1 = "Integration process was not completed successfully.";    
        handles.NOTIFICATIONS_BOX.String = str1;
     end
-    figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+    figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
     close(figHandles);
     str1 = "Integration process is completed successfully.";    
     handles.NOTIFICATIONS_BOX.String = str1;
@@ -1695,182 +2074,10 @@ try
 catch
     
     uiwait(msgbox('ERROR: Please check the selected method and if the filtered data are produced.','modal'));       
-    figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+    figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
     close(figHandles);
     str1 = "ERROR: Integration process cannot be completed. Please check the selected method and if the filtered data are produced.";    
     handles.NOTIFICATIONS_BOX.String = str1;
-    
-end
-
-
-guidata(hObject, handles);
-
-
-% --- Executes on button press in ExportRESULTS.
-function ExportRESULTS_Callback(hObject, eventdata, handles)
-% hObject    handle to ExportRESULTS (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-try
-    
-    wb = waitbar(0, ['\bf \fontsize{12} Please wait for exporting results...']);
-    wbc = allchild(wb);
-    jp = wbc(1).JavaPeer;
-    wbc(1).JavaPeer.setForeground(wbc(1).JavaPeer.getForeground.cyan);
-    jp.setIndeterminate(1);    
-    
-    switch handles.MethodFLAG
-        case 0
-            uiwait(msgbox('ERROR: There is no data to be exported, select an appropriate method in STEP 2 and proceed accordingly.','modal'));
-        case 1
-            if handles.Int_NCD_export_FLAG == 1                
-                handles.Int_NCD_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';                                
-                writetable(handles.Int_NCD_export,fullfile(handles.Results_folder_path,['NCD_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
-                figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
-                close(figHandles);
-                str1 = ['Integration results are exported in the following folder: ' handles.Results_folder_path];    
-                handles.NOTIFICATIONS_BOX.String = str1;            
-            else
-                figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
-                close(figHandles);
-                uiwait(msgbox('ERROR: There is no data to be exported. Please select NCD or ALL methods in STEP 2 and load the mandatory spectra.','modal'));
-                str1 = "ERROR: There is no data to be exported. Please select NCD or ALL methods in STEP 2 and load the mandatory spectra.";    
-                handles.NOTIFICATIONS_BOX.String = str1;
-            end
-        case 2
-            if handles.Int_SMolESYfiltered_export_FLAG == 1                
-                handles.Int_SMolESYfiltered_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';                
-                writetable(handles.Int_SMolESYfiltered_export,fullfile(handles.Results_folder_path,['SMolESY-filtering_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
-                figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
-                close(figHandles);
-                str1 = ['Integration results are exported in the following folder: ' handles.Results_folder_path];    
-                handles.NOTIFICATIONS_BOX.String = str1;            
-            else
-                figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
-                close(figHandles);
-                uiwait(msgbox('ERROR: There is no data to be exported. Please select SMolESY-filtering or ALL methods in STEP 2.','modal'));
-                str1 = "ERROR: There is no data to be exported. Please select SMolESY-filtering or ALL methods in STEP 2 or check if SMolESY data are successfully produced in STEP 1.";    
-                handles.NOTIFICATIONS_BOX.String = str1;
-            end
-        case 3
-            if handles.Int_baseline_export_FLAG == 1
-                handles.Int_baseline_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';                
-                writetable(handles.Int_baseline_export,fullfile(handles.Results_folder_path,['Protein_signal_extraction_(0.2-0.5ppm)_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
-                figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
-                close(figHandles);
-                str1 = ['Integration results are exported in the following folder: ' handles.Results_folder_path];    
-                handles.NOTIFICATIONS_BOX.String = str1;
-            else
-                figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
-                close(figHandles);
-                uiwait(msgbox('ERROR: There is no data to be exported. Please select Protein signal extraction from 0.2-0.5 ppm or ALL methods in STEP 2.','modal'));
-                str1 = "ERROR: There is no data to be exported. Please select Protein signal extraction from 0.2-0.5 ppm or ALL methods in STEP 2 or check if Protein signal extraction from 0.2-0.5 ppm was successfully produced in STEP 1.";    
-                handles.NOTIFICATIONS_BOX.String = str1;
-            end 
-        case 4
-            if handles.Int_NCD_export_FLAG == 1 && handles.Int_baseline_export_FLAG == 1 && handles.Int_SMolESYfiltered_export_FLAG == 1
-                
-                handles.Int_NCD_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';
-                handles.Int_SMolESYfiltered_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';                
-                handles.Int_baseline_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';                
-                
-                writetable(handles.Int_NCD_export,fullfile(handles.Results_folder_path,['NCD_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
-                writetable(handles.Int_baseline_export,fullfile(handles.Results_folder_path,['Protein_signal_extraction_(0.2-0.5ppm)_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
-                writetable(handles.Int_SMolESYfiltered_export,fullfile(handles.Results_folder_path,['SMolESY-filtering_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
-                figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
-                close(figHandles);
-                str1 = ['Integration results are exported in the following folder: ' handles.Results_folder_path];    
-                handles.NOTIFICATIONS_BOX.String = str1;
-            else
-                figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
-                close(figHandles);
-                uiwait(msgbox('ERROR: There is no data to be exported. Please select ALL methods in STEP 2.','modal'));
-                str1 = "ERROR: There is no data to be exported. Please select ALL methods in STEP 2 or check all filtering methods data are successfully produced. ";    
-                handles.NOTIFICATIONS_BOX.String = str1;
-            end             
-    end
-catch
-    
-    uiwait(msgbox('ERROR: There is no data to be exported. Please calculate integrals and/or absolute concentrations.','modal'));
-    figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
-    close(figHandles);
-    str1 = "ERROR: There is no data to be exported. Please calculate integrals and/or absolute concentrations.";    
-    handles.NOTIFICATIONS_BOX.String = str1;
-    
-end
-
-
-% --- Executes on selection change in ChooseREGIONS_Int.
-function ChooseREGIONS_Int_Callback(hObject, eventdata, handles)
-% hObject    handle to ChooseREGIONS_Int (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns ChooseREGIONS_Int contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from ChooseREGIONS_Int
-
-
-contents = cellstr(get(hObject,'String'));
-
-if handles.MethodFLAG == 0 || handles.MethodFLAG == 3
-    
-    handles.Int_REGION_flag = 0;
-    handles.Int_REGION = 0;
-    
-    uiwait(msgbox('NCD and/or SMolESY filtered NMR spectra are needed. Please be sure that you have selected either one of these or ALL methods in STEP 2.','modal')); 
-    str1 = "ERROR: NCD and/or SMolESY filtered NMR spectra are needed. Please be sure that you have selected either one of these or ALL methods in STEP 2.";    
-    handles.NOTIFICATIONS_BOX.String = str1;
-    
-else
-    if isequal(contents{get(hObject,'Value')},'Select * spectrum region(s) for integration')
-
-        handles.Int_REGION_flag = 0;
-        handles.Int_REGION = 0;
-
-    elseif isequal(contents{get(hObject,'Value')},'0.2 - 0.5 ppm')
-
-        handles.Int_REGION_flag = 1;
-        handles.Int_REGION = [0.2 0.5];
-        
-    elseif isequal(contents{get(hObject,'Value')},'0.2 - 0.7 ppm')
-
-        handles.Int_REGION_flag = 2;
-        handles.Int_REGION = [0.2 0.7];
-        
-% 
-%     elseif isequal(contents{get(hObject,'Value')},'0.8 - 2.0 ppm')    
-% 
-%         handles.Int_REGION_flag = 3;
-%         handles.Int_REGION = [0.8 2.0];
-% 
-%     elseif isequal(contents{get(hObject,'Value')},'6.3 - 7.0 ppm')    
-% 
-%         handles.Int_REGION_flag = 4;
-%         handles.Int_REGION = [6.3 7.0];
-
-    elseif isequal(contents{get(hObject,'Value')},'8.0 - 10.0 ppm')    
-
-%         handles.Int_REGION_flag = 5;
-        handles.Int_REGION_flag = 3;
-        handles.Int_REGION = [8.0 10.0];
-        
-
-    elseif isequal(contents{get(hObject,'Value')},'All the above')
-
-%         handles.Int_REGION_flag = 6;
-        handles.Int_REGION_flag = 4;
-        %handles.Int_REGION = [0.2 0.5; 0.2 0.7; 0.8 2.0; 6.3 7.0; 8.0 10.0];
-        handles.Int_REGION = [0.2 0.5; 0.2 0.7; 8.0 10.0];
-        
-    else
-        uiwait(msgbox('NCD and/or SMolESY filtered NMR spectra are needed. Please be sure that you have selected either one of these or ALL methods in STEP 2.','modal'));
-        str1 = "ERROR: NCD and/or SMolESY filtered NMR spectra are needed. Please be sure that you have selected either one of these or ALL methods in STEP 2.";    
-        handles.NOTIFICATIONS_BOX.String = str1;
-        handles.Int_REGION_flag = 0;
-        handles.Int_REGION = 0;
-    end
     
 end
 
@@ -2038,7 +2245,7 @@ try
     else
     
         uiwait(msgbox('ERROR: Please check the selected method(s) and if the filtered data are produced.','modal'));
-        figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+        figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
         close(figHandles);
         str1 = "Exported data process was not completed successfully.";    
         handles.NOTIFICATIONS_BOX.String = str1;
@@ -2096,7 +2303,7 @@ try
             temp_out.Properties.DimensionNames{1} = 'SMolESY Filter';
             mkdir(fullfile(D,handles.Samples_titles1D{i}))
             writetable(temp_out,fullfile(D,handles.Samples_titles1D{i},[handles.Samples_titles1D{i} '-SMolESY-filter_data.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
-            figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+            figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
             close(figHandles);
         end    
         if i == size(handles.Samples_titles1D,1)
@@ -2104,7 +2311,7 @@ try
         end
     else
         uiwait(msgbox('ERROR: Please select SMolESY-filtering method or ALL methods (STEP 2) and if the SMolESY-filtered data are produced.','modal'));
-        figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+        figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
         close(figHandles);
         str1 = "Exported data process was not completed successfully.";    
         handles.NOTIFICATIONS_BOX.String = str1; 
@@ -2115,7 +2322,7 @@ try
 
 catch
     uiwait(msgbox('ERROR: Please select SMolESY-filtering method or ALL methods (STEP 2) and if the SMolESY-filtered data are produced.','modal'));
-    figHandles = findobj('type', 'figure', '-not', 'name', 'NMRpQuant');
+    figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
     close(figHandles);
     str1 = "Exported data process was not completed successfully.";    
     handles.NOTIFICATIONS_BOX.String = str1; 
@@ -2161,8 +2368,10 @@ function DispTitleON_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-handles.TitlesStatus.String = 'Titles: ON';
+%handles.TitlesStatus.String = 'Titles: ON';
 %save('asas.mat','handles')
+set(handles.DispTitleON,'ForegroundColor','green');
+set(handles.DispTitleOFF,'ForegroundColor','black');
 delete(findall(handles.SMolESY_processed_and_or_CPMG,'type','text'))
 delete(findall(handles.NCD_and_or_SMolESY_filtered,'type','text'))
 delete(findall(handles.Standard1D_plot,'type','text'))
@@ -2178,10 +2387,11 @@ set (handles.SMolESY_processed_and_or_CPMG.Children, 'ButtonDownFcn', {@showTitl
 
 set (handles.NCD_and_or_SMolESY_filtered.Children, 'ButtonDownFcn', @showTitleOFF)
 set (handles.Standard1D_plot.Children, 'ButtonDownFcn', @showTitleOFF)
-handles.TitlesStatusONE.String = 'Titles: OFF';
-handles.TitlesStatusTHREE.String = 'Titles: OFF';
 
-
+set(handles.DispOnONE,'ForegroundColor','black');
+set(handles.DispOFFOne,'ForegroundColor','green');
+set(handles.DispONTHREE,'ForegroundColor','black');
+set(handles.DispOFFTHree,'ForegroundColor','green');
 guidata(hObject, handles);
 
 
@@ -2191,7 +2401,15 @@ function DispTitleOFF_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-handles.TitlesStatus.String = 'Titles: OFF';
+%handles.TitlesStatus.String = 'Titles: OFF';
+
+set(handles.DispTitleON,'ForegroundColor','black');
+set(handles.DispTitleOFF,'ForegroundColor','green');
+set(handles.DispOnONE,'ForegroundColor','black');
+set(handles.DispOFFOne,'ForegroundColor','green');
+set(handles.DispONTHREE,'ForegroundColor','black');
+set(handles.DispOFFTHree,'ForegroundColor','green');
+
 delete(findall(handles.SMolESY_processed_and_or_CPMG,'type','text'))
 delete(findall(handles.NCD_and_or_SMolESY_filtered,'type','text'))
 delete(findall(handles.Standard1D_plot,'type','text'))
@@ -2203,57 +2421,18 @@ set (handles.SMolESY_processed_and_or_CPMG.Children, 'ButtonDownFcn', @showTitle
 guidata(hObject, handles);
 
 
-function TitlesStatus_Callback(hObject, eventdata, handles)
-% hObject    handle to TitlesStatus (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of TitlesStatus as text
-%        str2double(get(hObject,'String')) returns contents of TitlesStatus as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function TitlesStatus_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to TitlesStatus (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function TitlesStatusONE_Callback(hObject, eventdata, handles)
-% hObject    handle to TitlesStatusONE (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of TitlesStatusONE as text
-%        str2double(get(hObject,'String')) returns contents of TitlesStatusONE as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function TitlesStatusONE_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to TitlesStatusONE (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
 % --- Executes on button press in DispOFFOne.
 function DispOFFOne_Callback(hObject, eventdata, handles)
 % hObject    handle to DispOFFOne (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.TitlesStatusONE.String = 'Titles: OFF';
+
+set(handles.DispTitleON,'ForegroundColor','black');
+set(handles.DispTitleOFF,'ForegroundColor','green');
+set(handles.DispOnONE,'ForegroundColor','black');
+set(handles.DispOFFOne,'ForegroundColor','green');
+set(handles.DispONTHREE,'ForegroundColor','black');
+set(handles.DispOFFTHree,'ForegroundColor','green');
 
 delete(findall(handles.SMolESY_processed_and_or_CPMG,'type','text'))
 delete(findall(handles.NCD_and_or_SMolESY_filtered,'type','text'))
@@ -2271,8 +2450,10 @@ function DispOnONE_Callback(hObject, eventdata, handles)
 % hObject    handle to DispOnONE (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.TitlesStatusONE.String = 'Titles: ON';
-%save('asas.mat','handles')
+
+set(handles.DispOnONE,'ForegroundColor','green');
+set(handles.DispOFFOne,'ForegroundColor','black');
+
 delete(findall(handles.SMolESY_processed_and_or_CPMG,'type','text'))
 delete(findall(handles.NCD_and_or_SMolESY_filtered,'type','text'))
 delete(findall(handles.Standard1D_plot,'type','text'))
@@ -2289,9 +2470,11 @@ set (handles.Standard1D_plot.Children, 'ButtonDownFcn', {@showTitle, handles.Sta
 
 set (handles.NCD_and_or_SMolESY_filtered.Children, 'ButtonDownFcn', @showTitleOFF)
 set (handles.SMolESY_processed_and_or_CPMG.Children, 'ButtonDownFcn', @showTitleOFF)
-handles.TitlesStatus.String = 'Titles: OFF';
-handles.TitlesStatusTHREE.String = 'Titles: OFF';
 
+set(handles.DispTitleON,'ForegroundColor','black');
+set(handles.DispTitleOFF,'ForegroundColor','green');
+set(handles.DispONTHREE,'ForegroundColor','black');
+set(handles.DispOFFTHree,'ForegroundColor','green');
 
 guidata(hObject, handles);
 
@@ -2301,8 +2484,10 @@ function DispONTHREE_Callback(hObject, eventdata, handles)
 % hObject    handle to DispONTHREE (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.TitlesStatusTHREE.String = 'Titles: ON';
-%save('asas.mat','handles')
+
+set(handles.DispONTHREE,'ForegroundColor','green');
+set(handles.DispOFFTHree,'ForegroundColor','black');
+
 delete(findall(handles.SMolESY_processed_and_or_CPMG,'type','text'))
 delete(findall(handles.NCD_and_or_SMolESY_filtered,'type','text'))
 delete(findall(handles.Standard1D_plot,'type','text'))
@@ -2318,9 +2503,11 @@ set (handles.NCD_and_or_SMolESY_filtered.Children, 'ButtonDownFcn', {@showTitle,
 
 set (handles.Standard1D_plot.Children, 'ButtonDownFcn', @showTitleOFF)
 set (handles.SMolESY_processed_and_or_CPMG.Children, 'ButtonDownFcn', @showTitleOFF)
-handles.TitlesStatus.String = 'Titles: OFF';
-handles.TitlesStatusONE.String = 'Titles: OFF';
 
+set(handles.DispTitleON,'ForegroundColor','black');
+set(handles.DispTitleOFF,'ForegroundColor','green');
+set(handles.DispOnONE,'ForegroundColor','black');
+set(handles.DispOFFOne,'ForegroundColor','green');
 
 guidata(hObject, handles);
 
@@ -2330,7 +2517,7 @@ function DispOFFTHree_Callback(hObject, eventdata, handles)
 % hObject    handle to DispOFFTHree (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.TitlesStatusTHREE.String = 'Titles: OFF';
+
 
 
 delete(findall(handles.SMolESY_processed_and_or_CPMG,'type','text'))
@@ -2342,26 +2529,483 @@ set(handles.NCD_and_or_SMolESY_filtered.Children,'LineWidth',0.5);
 
 set (handles.NCD_and_or_SMolESY_filtered.Children, 'ButtonDownFcn', @showTitleOFF)
 
+set(handles.DispTitleON,'ForegroundColor','black');
+set(handles.DispTitleOFF,'ForegroundColor','green');
+set(handles.DispOnONE,'ForegroundColor','black');
+set(handles.DispOFFOne,'ForegroundColor','green');
+set(handles.DispONTHREE,'ForegroundColor','black');
+set(handles.DispOFFTHree,'ForegroundColor','green');
+
+
 guidata(hObject, handles);
 
 
-function TitlesStatusTHREE_Callback(hObject, eventdata, handles)
-% hObject    handle to TitlesStatusTHREE (see GCBO)
+% --- Executes on button press in ZOOM_First_ON.
+function ZOOM_First_ON_Callback(hObject, eventdata, handles)
+% hObject    handle to ZOOM_First_ON (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of TitlesStatusTHREE as text
-%        str2double(get(hObject,'String')) returns contents of TitlesStatusTHREE as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function TitlesStatusTHREE_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to TitlesStatusTHREE (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+handles.hZoom = [];
+if isempty(handles.hZoom)
+    handles.hZoom = zoom;
 end
+
+if ~strcmp(get(handles.hZoom,'Enable'), 'on')
+    handles.axesLimitsStandard1D_plot = get(handles.Standard1D_plot,{'xlim','ylim'});
+    guidata(hObject, handles);
+    set(handles.hZoom, 'Enable', 'on');
+    set(handles.ZOOM_First_ON,'ForegroundColor','green');   
+    set(handles.ZOOM_first_OFF,'ForegroundColor','black');
+    set(handles.ZOOM_Second_ON,'ForegroundColor','green');
+    set(handles.ZOOM_Second_OFF,'ForegroundColor','black');
+    set(handles.ZOOM_Third_ON,'ForegroundColor','green');
+    set(handles.ZOOM_Third_OFF,'ForegroundColor','black');
+end
+
+
+
+
+guidata(hObject, handles);
+
+% --- Executes on button press in ZOOM_first_OFF.
+function ZOOM_first_OFF_Callback(hObject, eventdata, handles)
+% hObject    handle to ZOOM_first_OFF (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if ~isempty(handles.hZoom)
+    set(handles.hZoom, 'Enable', 'off');
+    set(handles.ZOOM_First_ON,'ForegroundColor','black');
+    set(handles.ZOOM_first_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Second_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Second_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Third_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Third_OFF,'ForegroundColor','green');
+    
+end
+
+
+
+
+% --- Executes on button press in ZOOM_Second_ON.
+function ZOOM_Second_ON_Callback(hObject, eventdata, handles)
+% hObject    handle to ZOOM_Second_ON (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+handles.hZoom = [];
+if isempty(handles.hZoom)
+    handles.hZoom = zoom;
+end
+
+if ~strcmp(get(handles.hZoom,'Enable'), 'on')
+    handles.axesLimitsStandard1D_plot = get(handles.Standard1D_plot,{'xlim','ylim'});
+    guidata(hObject, handles);
+    set(handles.hZoom, 'Enable', 'on');
+    set(handles.ZOOM_First_ON,'ForegroundColor','green');   
+    set(handles.ZOOM_first_OFF,'ForegroundColor','black');
+    set(handles.ZOOM_Second_ON,'ForegroundColor','green');
+    set(handles.ZOOM_Second_OFF,'ForegroundColor','black');
+    set(handles.ZOOM_Third_ON,'ForegroundColor','green');
+    set(handles.ZOOM_Third_OFF,'ForegroundColor','black');
+end
+
+
+
+
+guidata(hObject, handles);
+
+% --- Executes on button press in ZOOM_Second_OFF.
+function ZOOM_Second_OFF_Callback(hObject, eventdata, handles)
+% hObject    handle to ZOOM_Second_OFF (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if ~isempty(handles.hZoom)
+    set(handles.hZoom, 'Enable', 'off');
+    set(handles.ZOOM_First_ON,'ForegroundColor','black');
+    set(handles.ZOOM_first_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Second_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Second_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Third_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Third_OFF,'ForegroundColor','green');
+    
+end
+
+
+% --- Executes on button press in ZOOM_Third_ON.
+function ZOOM_Third_ON_Callback(hObject, eventdata, handles)
+% hObject    handle to ZOOM_Third_ON (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+handles.hZoom = [];
+if isempty(handles.hZoom)
+    handles.hZoom = zoom;
+end
+
+if ~strcmp(get(handles.hZoom,'Enable'), 'on')
+    handles.axesLimitsStandard1D_plot = get(handles.Standard1D_plot,{'xlim','ylim'});
+    guidata(hObject, handles);
+    set(handles.hZoom, 'Enable', 'on');
+    set(handles.ZOOM_First_ON,'ForegroundColor','green');   
+    set(handles.ZOOM_first_OFF,'ForegroundColor','black');
+    set(handles.ZOOM_Second_ON,'ForegroundColor','green');
+    set(handles.ZOOM_Second_OFF,'ForegroundColor','black');
+    set(handles.ZOOM_Third_ON,'ForegroundColor','green');
+    set(handles.ZOOM_Third_OFF,'ForegroundColor','black');
+end
+
+
+
+
+guidata(hObject, handles);
+
+% --- Executes on button press in ZOOM_Third_OFF.
+function ZOOM_Third_OFF_Callback(hObject, eventdata, handles)
+% hObject    handle to ZOOM_Third_OFF (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if ~isempty(handles.hZoom)
+    set(handles.hZoom, 'Enable', 'off');
+    set(handles.ZOOM_First_ON,'ForegroundColor','black');
+    set(handles.ZOOM_first_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Second_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Second_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Third_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Third_OFF,'ForegroundColor','green');
+    
+end
+
+
+
+% --- Executes on button press in RESETTWO.
+function RESETTWO_Callback(hObject, eventdata, handles)
+% hObject    handle to RESETTWO (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if ~isempty(handles.hZoom)
+    set(handles.hZoom, 'Enable', 'off');
+    set(handles.Standard1D_plot, {'xlim','ylim'}, handles.INITaxesLimitsStandard1D_plot);
+    set(handles.ZOOM_First_ON,'ForegroundColor','black');
+    set(handles.ZOOM_first_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Second_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Second_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Third_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Third_OFF,'ForegroundColor','green');
+end
+
+
+
+% --- Executes on button press in RESETTHREE.
+function RESETTHREE_Callback(hObject, eventdata, handles)
+% hObject    handle to RESETTHREE (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if ~isempty(handles.hZoom)
+    set(handles.hZoom, 'Enable', 'off');
+    set(handles.Standard1D_plot, {'xlim','ylim'}, handles.INITaxesLimitsStandard1D_plot);
+    set(handles.ZOOM_First_ON,'ForegroundColor','black');
+    set(handles.ZOOM_first_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Second_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Second_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Third_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Third_OFF,'ForegroundColor','green');
+end
+
+
+% --- Executes on button press in ResetONE.
+function ResetONE_Callback(hObject, eventdata, handles)
+% hObject    handle to ResetONE (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if ~isempty(handles.hZoom)
+    set(handles.hZoom, 'Enable', 'off');
+    set(handles.Standard1D_plot, {'xlim','ylim'}, handles.INITaxesLimitsStandard1D_plot);
+    set(handles.ZOOM_First_ON,'ForegroundColor','black');
+    set(handles.ZOOM_first_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Second_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Second_OFF,'ForegroundColor','green');
+    set(handles.ZOOM_Third_ON,'ForegroundColor','black');
+    set(handles.ZOOM_Third_OFF,'ForegroundColor','green');
+end
+
+
+% --- Executes on button press in CHECKPOINT.
+function CHECKPOINT_Callback(hObject, eventdata, handles)
+% hObject    handle to CHECKPOINT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+try
+    try
+        [checkpoint_file, checkpoint_path] = uiputfile(fullfile(handles.Results_folder_path,'*.mat'));
+    catch
+        filter = {'*.mat'};
+        [checkpoint_file, checkpoint_path] = uiputfile(filter);
+    end
+    wb = waitbar(0, ['\bf \fontsize{12} Please wait for saving the checkpoint *.mat file...'],'windowstyle', 'alwaysontop');
+    wbc = allchild(wb);
+    jp = wbc(1).JavaPeer;
+    wbc(1).JavaPeer.setForeground(wbc(1).JavaPeer.getForeground.cyan);
+    jp.setIndeterminate(1);    
+    
+    save(fullfile(checkpoint_path,checkpoint_file),'handles')
+    close(wb)
+    str1 = "Checkpoint file of the current session is successfully saved here: ";
+    str2 = fullfile(checkpoint_path,checkpoint_file);
+    str3 = "You could safely close NMRpQuant.";
+    handles.NOTIFICATIONS_BOX.String = str1 + newline + str2 + newline + str3 ;
+catch
+    str1 = "ERROR: Checkpoint file was not saved. Something went wrong. Please check you hard disk space.";    
+    handles.NOTIFICATIONS_BOX.String = str1;
+end
+handles.save_session_path = checkpoint_path;
+guidata(hObject, handles);
+
+
+% --- Executes on button press in LOAD_CHECKPOINT.
+function LOAD_CHECKPOINT_Callback(hObject, eventdata, handles)
+% hObject    handle to LOAD_CHECKPOINT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+try
+    try        
+        [loadcheckpoint_file, loadcheckpoint_path] = uigetfile(fullfile(handles.save_session_path,'*.mat'));
+    catch
+        try
+            [loadcheckpoint_file, loadcheckpoint_path] = uigetfile(fullfile(handles.Results_folder_path,'*.mat'));
+        catch
+            filter = {'*.mat'};
+            [loadcheckpoint_file, loadcheckpoint_path] = uigetfile(filter);
+        end
+    end
+    wb = waitbar(0, ['\bf \fontsize{12} Please wait for loading the checkpoint *.mat file...'],'windowstyle', 'alwaysontop');
+    wbc = allchild(wb);
+    jp = wbc(1).JavaPeer;
+    wbc(1).JavaPeer.setForeground(wbc(1).JavaPeer.getForeground.cyan);
+    jp.setIndeterminate(1);    
+    
+    load(fullfile(loadcheckpoint_path,loadcheckpoint_file))
+    newStr = erase(loadcheckpoint_file,".mat");
+    close_name_fig = handles.MAIN_PROT.Name;
+    handles.MAIN_PROT.Name = ['NMRpQuant_' newStr];     
+    drawnow;
+    pause(6);
+    close(wb) 
+    str1 = "Checkpoint file is successfully loaded. You could proceed using NMRpQuant.";    
+    handles.NOTIFICATIONS_BOX.String = str1;
+    close(close_name_fig)
+catch
+    str1 = "Checkpoint file was not loaded.";    
+    handles.NOTIFICATIONS_BOX.String = str1;
+    close(wb)
+end
+
+
+% --- Executes on button press in Automated_Platform.
+function Automated_Platform_Callback(hObject, eventdata, handles)
+% hObject    handle to Automated_Platform (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+str1 =  sprintf('This option provides Total Urinary Protein quantification by one-click.\n\n >>> The selected filtering method is SMolESY-based filter <<< \n[no extra NMR spectra (e.g. CPMG or similar for NCD method) are needed].\n\n To complete quantification process, please select quantification method (enter 1 or 2). \n -—> Enter 1: For relative concentrations (a.u.)\n -—> Enter 2: For absolute concentrations (mg/mL)*\n*CAUTION: Option 2 requires ERETIC (Bruker Quantref at 12.0 ppm).\n\n');
+prompt = {str1};
+dlgtitle = 'Inputs for Automated Total Protein Quantification';
+answer = inputdlg(prompt,dlgtitle);
+
+wb = waitbar(0, ['\bf \fontsize{12} Please wait for Automated Total Protein Quantification and results exportation...'],'windowstyle', 'alwaysontop');
+wbc = allchild(wb);
+jp = wbc(1).JavaPeer;
+wbc(1).JavaPeer.setForeground(wbc(1).JavaPeer.getForeground.cyan);
+jp.setIndeterminate(1);   
+handles.Int_REGION = [0.2 0.5; 0.2 0.7; 8.0 10.0];
+if size(answer,1) == 0
+    handles.MethodFLAG = 0;
+    figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+    close(figHandles);
+    uiwait(msgbox('You could proceed with the steps 2-5 in NMRpQuant GUI. Automated protein quantification is aborted.'));    
+    return
+else
+    if str2num(answer{1,1}) == 2
+        handles.UseBuiltInCurves.Value = 1;
+        handles.AskNEWCurve.Value = 0;    
+        handles.absfactors = [2.7 1.05 0.53];
+        handles.absfactorsError = [0.028 0.062 0.033];
+        handles.absIntregion = [11.9 12.1];    
+        handles.absConRef = 10;
+        handles.GoforABS = 1;
+        handles.QREF_Int = [];
+        for i = 1:length(handles.Samples_titles1D)
+            handles.QREF_Int(i,1) = find_region_integrate(handles.X1D(i,:),handles.Y1D(i,:),handles.absIntregion);
+        end  
+        handles.MethodFLAG = 2;    
+    elseif str2num(answer{1,1}) == 1
+        handles.MethodFLAG = 2;
+        handles.absfactors = 0;
+        handles.absfactorsError = 0;
+        handles.absIntregion = 0;    
+        handles.absConRef = 0;
+        handles.GoforABS = 0;
+    else
+        handles.MethodFLAG = 0;
+        figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+        close(figHandles);
+        uiwait(msgbox('You could proceed with the steps 2-5 in NMRpQuant GUI. Automated protein quantification is aborted.'));    
+        return
+    end
+end
+
+if handles.MethodFLAG == 2 && handles.PASS_SMolESY == 1
+    try
+        for i = 1:length(handles.Samples_titles1D)
+            Integral_temp_SMolESYfiltered = NMRpQuant_NCD_SMolESY_method_integration(handles.X1D(i,:),handles.SMolESY_filtered1D(i,:), handles.Int_REGION);
+            Integral_F_SMolESYfiltered(i,:) = transpose(Integral_temp_SMolESYfiltered);
+        end  
+        if handles.GoforABS == 0
+            Region_names = {'Total Protein concentration (a.u.): 0.2 - 0.5 ppm' 'Total Protein concentration (a.u.): 0.2 - 0.7 ppm'...
+                                'Total Protein concentration (a.u.): 8.0 - 10.0 ppm'};
+            Int_SMolESYfiltered_export = array2table(Integral_F_SMolESYfiltered,'RowNames',handles.Samples_titles1D,'VariableNames',Region_names);   
+            handles.Int_SMolESYfiltered_export = Int_SMolESYfiltered_export;
+            handles.Int_SMolESYfiltered_export_FLAG = 1;
+        elseif handles.GoforABS == 1               
+            Integral_F_SMolESYfiltered_F = (Integral_F_SMolESYfiltered*handles.absConRef.*handles.absfactors)./handles.QREF_Int; 
+            Region_namesABS = {'Total Protein concentration (mg/mL): 0.2 - 0.5 ppm' 'Total Protein concentration (mg/mL): 0.2 - 0.7 ppm'...
+                                'Total Protein concentration (mg/mL): 8.0 - 10.0 ppm' 'Total Protein concentration (mg/mL): All regions'};
+            Region_namesAU = {'Total Protein concentration (a.u.): 0.2 - 0.5 ppm' 'Total Protein concentration (a.u.): 0.2 - 0.7 ppm'...
+                                'Total Protein concentration (a.u.): 8.0 - 10.0 ppm'};
+            ERROR_names = {'+/- Error (mg/mL): 0.2 - 0.5 ppm' '+/- Error (mg/mL): 0.2 - 0.7 ppm'...
+                                '+/- Error (mg/mL): 8.0 - 10.0 ppm' '+/- Error (mg/mL): All regions'};
+            [~,ii] = find(Integral_F_SMolESYfiltered_F == 0);                        
+            if isempty(ii)
+                [~,oo] = find(handles.absfactorsError == 0);
+                clearvars a b ERROR
+                ERROR = Integral_F_SMolESYfiltered_F.*handles.absfactorsError;
+                ERROR(1:length(handles.Samples_titles1D),oo) = NaN;
+                a = [Integral_F_SMolESYfiltered_F mean(Integral_F_SMolESYfiltered_F,2)];
+                a = round(a,4);
+                b = [ERROR mean(ERROR,2)];
+                b = round(b,4);
+                a = a';
+                b = b';
+                Integral_F_SMolESYfiltered_FF = reshape([a(:) b(:)]',2*size(a,1), [])';                            
+                ca3 = [Region_namesABS,ERROR_names];
+                idx = reshape(1:8,[],2)';
+                ca3 = ca3(:,idx(1:end));
+                Int_SMolESYfiltered_export = array2table(Integral_F_SMolESYfiltered_FF,'RowNames',handles.Samples_titles1D,'VariableNames',ca3);
+            else
+                IND = unique(ii);
+                Temp_Integral_F_SMolESYfiltered_F = Integral_F_SMolESYfiltered_F;
+                Temp_Integral_F_SMolESYfiltered_F(:,IND) = [];
+                TEMP_absfactorsError = handles.absfactorsError;
+                
+                TEMP_absfactorsError(:,IND) = [];
+                [~,ooo] = find(TEMP_absfactorsError == 0);                            
+                TEMP_absfactorsError(:,ooo) = NaN;
+                Temp_ERROR = Temp_Integral_F_SMolESYfiltered_F.*TEMP_absfactorsError;                                                                                   
+                
+                [~,oo] = find(handles.absfactorsError == 0);
+                clearvars a b ERROR ooo TEMP_absfactorsError
+                
+                ERROR = Integral_F_SMolESYfiltered_F.*handles.absfactorsError;
+                ERROR(1:length(handles.Samples_titles1D),oo) = NaN;
+                a = [Integral_F_SMolESYfiltered_F mean(Temp_Integral_F_SMolESYfiltered_F,2)];
+                a = round(a,4);
+                a(:,IND) = Integral_F_SMolESYfiltered(:,IND);
+                b = [ERROR mean(Temp_ERROR,2)];
+                b = round(b,4);                                                   
+                a = a';
+                b = b';
+                Integral_F_SMolESYfiltered_FF = reshape([a(:) b(:)]',2*size(a,1), [])';     
+                Region_namesABS(IND) = Region_namesAU(IND);
+                ca3 = [Region_namesABS,ERROR_names];
+                idx = reshape(1:8,[],2)';
+                ca3 = ca3(:,idx(1:end));
+                INDs = 2*IND;
+                ca3(INDs) = [];
+                Integral_F_SMolESYfiltered_FF(:,INDs) = [];
+                Int_SMolESYfiltered_export = array2table(Integral_F_SMolESYfiltered_FF,'RowNames',handles.Samples_titles1D,'VariableNames',ca3);
+            end
+             
+            handles.Int_SMolESYfiltered_export = Int_SMolESYfiltered_export;
+            handles.Int_SMolESYfiltered_export_FLAG = 1;
+        end
+        fig = uifigure('Name','SMolESY-filtering_based_protein_concentration','Position',[100 100 752 250]);
+        fig.WindowStyle = 'alwaysontop';        
+        RESULTS_TABLE = uitable('Parent',fig,'Position',[25 50 700 200]);
+        D = handles.Int_SMolESYfiltered_export.Properties.VariableNames;
+        Index = find(contains(D,':'));
+        for i = 1:length(Index)
+            K = D(Index(i));
+            D(Index(i)) = {strrep(char(K{1}),':',':|')};
+        end
+        clearvars K Index
+        Index = find(contains(D,'Protein'));
+        for i = 1:length(Index)
+            K = D(Index(i));
+            D(Index(i)) = {strrep(char(K{1}),'Total Protein','Total Protein|')};
+        end               
+        set(RESULTS_TABLE,'ColumnName',[{'NMR Spectra / Total Protein| (a.u and/or mg/mL) per region -->'} D]);
+        set(RESULTS_TABLE,'Data',[handles.Samples_titles1D table2cell(handles.Int_SMolESYfiltered_export)]);
+
+        clearvars K D Index
+
+        handles.Int_SMolESYfiltered_export.Properties.DimensionNames{1} = 'NMR Spectra / Total Protein (a.u and/or mg/mL) per region -->';                
+        writetable(handles.Int_SMolESYfiltered_export,fullfile(handles.Results_folder_path,['SMolESY-filtering_based_protein_concentration.csv']),'WriteVariableNames',true,'WriteRowNames',true); 
+        %figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+        close(wb);
+        str1 = ['Integration results are exported in the following file: ' fullfile(handles.Results_folder_path,'SMolESY-filtering_based_protein_concentration.csv')];    
+        handles.NOTIFICATIONS_BOX.String = str1; 
+
+    catch        
+        handles.Int_SMolESYfiltered_export_FLAG = 0;
+        figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+        close(figHandles);
+        uiwait(msgbox('ERROR: Please check if the Standard 1D 1H NMR spectra are properly loaded (in STEP 1 of NMRpQUANT) and the SMolESY-filter(ed) data are successfully produced.','modal'));            
+        str1 = "Integration process was not completed successfully.";    
+        handles.NOTIFICATIONS_BOX.String = str1;
+    end
+    handles.MethodFLAG = 0;
+    handles.absfactors = 0;
+    handles.absfactorsError = 0;
+    handles.absIntregion = 0;    
+    handles.absConRef = 0;
+    handles.GoforABS = 0;
+    handles.UseBuiltInCurves.Value = 0;
+    handles.AskNEWCurve.Value = 0; 
+    handles.Int_NCD_export_FLAG = 0; 
+    handles.Int_baseline_export_FLAG = 0;
+    handles.Int_SMolESYfiltered_export_FLAG = 0;
+    handles.Int_REGION = 0;
+else
+    handles.Int_REGION = 0;
+    handles.MethodFLAG = 0;
+    handles.Int_NCD_export_FLAG = 0; 
+    handles.Int_baseline_export_FLAG = 0;
+    handles.Int_SMolESYfiltered_export_FLAG = 0;
+    figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+    close(figHandles);
+    uiwait(msgbox('ERROR: Please check if the Standard 1D 1H NMR spectra are properly loaded (in STEP 1 of NMRpQUANT) and the SMolESY-filter(ed) data are successfully produced.','modal'));           
+    str1 = "Integration process was not completed successfully.";    
+    handles.NOTIFICATIONS_BOX.String = str1;
+end
+handles.MethodFLAG = 0;
+handles.absfactors = 0;
+handles.absfactorsError = 0;
+handles.absIntregion = 0;    
+handles.absConRef = 0;
+handles.GoforABS = 0;
+handles.UseBuiltInCurves.Value = 0;
+handles.AskNEWCurve.Value = 0;  
+handles.Int_NCD_export_FLAG = 0; 
+handles.Int_baseline_export_FLAG = 0;
+handles.Int_SMolESYfiltered_export_FLAG = 0;
+handles.Int_REGION = 0;
+
+figHandles = findobj('type', 'figure', '-not', 'name', handles.MAIN_PROT.Name);
+close(figHandles);
+
+guidata(hObject, handles);

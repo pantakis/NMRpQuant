@@ -45,7 +45,7 @@ try
         parentDir1D = uigetdir;
     end
     handles.Parent1D_folder = parentDir1D;
-    list_of_spectra_1D = prepare_spectra_files1D(parentDir1D);    
+    [list_of_spectra_1D,display_names] = prepare_spectra_files1D(parentDir1D);    
     if num2str(length(list_of_spectra_1D)) > 1
         uiwait(msgbox(['The software found ' num2str(length(list_of_spectra_1D)) ' spectra.'],'modal'));
     elseif num2str(length(list_of_spectra_1D)) == 1
@@ -127,7 +127,7 @@ try
             
         catch
             G11 = fullfile(parentDir1D,list_of_spectra_1D{i});
-            Subfolders = prepare_spectra_files1D(G11);
+            [Subfolders,~] = prepare_spectra_files1D(G11);
             G2 = fullfile(G11,Subfolders{1},'pdata','1');
             W(i,1) = getNMRdata(G2);
             Y1D(i,:) = W(i,1).Data';
@@ -192,7 +192,8 @@ try
     
     handles.Y1D = Y1D;        
     handles.X1D = X1D;       
-    handles.Samples_titles1D = list_of_spectra_1D;        
+    handles.Samples_titles1D = list_of_spectra_1D; 
+    handles.DISP_NAMES = display_names;
     handles.PASS_Standard1D = 1;
     
     % test_the_spectra Quality - production
@@ -213,7 +214,7 @@ try
         handles.Integrals_Baseline_fit = Tot_protein_Relative;
 
         str1 = "NMR Standard 1D & SMolESY & Protein signal extraction from 0.2-0.5 ppm data are successfully read/produced and loaded on the software.";
-        handles.NOTIFICATIONS_BOX.String = str1 + newline + "Please proceed with plotting the 1D spectra and the next STEPS." + newline + "You could check fitting results in 'OUTPUT FOLDER/..._filter_figures' folders.";
+        handles.NOTIFICATIONS_BOX.String = str1 + newline + "Please proceed with the next STEPS." + newline + "You could check fitting results in 'OUTPUT FOLDER/..._filter_figures' folders.";
     
     elseif ~isempty(find(PASS_SMolESY_test == 0)) && ~isempty(find(PASS_Fitted_base_test == 0))
     
@@ -259,11 +260,22 @@ try
     if i == size(list_of_spectra_1D,1)
         DIKA = waitbar2a(i/size(list_of_spectra_1D,1),handles.Progress,['NMR spectra Loading/Processing is completed.'],'g');
     end
-
-
+    
+    delete(findall(handles.Standard1D_plot,'type','text'))
+    delete(findall(handles.NCD_and_or_SMolESY_filtered,'type','text'))
+    delete(findall(handles.SMolESY_processed_and_or_CPMG,'type','text'))
     set(handles.SpectraNAMESTABLE,'Data',handles.Samples_titles1D); % Use the set command to change the uitable properties.    
-
     set (handles.SpectraNAMESTABLE, 'CellSelectionCallback', @cb_select)
+
+    if handles.PASS_Standard1D == 1
+        axes(handles.Standard1D_plot);plot(handles.X1D',handles.Y1D');set(gca,'XDir','reverse');
+        set (handles.Standard1D_plot.Children(:), {'DisplayName'}, flipud(handles.DISP_NAMES(:)))
+        set(handles.Standard1D_plot.Children,'LineWidth',0.5);
+        handles.INITaxesLimitsStandard1D_plot = get(handles.Standard1D_plot,{'xlim','ylim'});
+    else
+        uiwait(msgbox('There are no Standard 1D 1H NMR spectra.','modal'));    
+        handles.NOTIFICATIONS_BOX.String = "ERROR: The Standard 1D 1H NMR spectra cannot be plotted. Please try loading them.";   
+    end
 
     
 catch

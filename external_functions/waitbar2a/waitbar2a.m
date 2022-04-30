@@ -92,7 +92,7 @@ elseif nargin == 1
     f = findobj(allchild(0), 'flat', 'Tag', 'TMWWaitbar');
     if isempty(f)
         type = 2;
-        name = 'Waitbar';
+        name = ' ';
     else
         type = 1;
         f    = f(1);
@@ -364,7 +364,7 @@ function [f, waitbartext, cancelBtnFcn] = propset(f,propargs)
 	set(f,'Tag','TMWWaitbar');
 	
 	%set default waitbartext
-	waitbartext = 'Waitbar';
+	waitbartext = ' ';
 	
 	%set default empty cancelbtnfcn
 	cancelBtnFcn = [];

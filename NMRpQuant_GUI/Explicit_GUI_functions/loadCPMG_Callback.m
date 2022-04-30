@@ -4,14 +4,9 @@ function loadCPMG_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-
-
-
 handles.Check_CPMG_plot = 0;
 handles.Int_NCD_export_FLAG = 0; 
 handles.PASS_CPMG = 0;
-
-
 
 if handles.MethodFLAG == 1 || handles.MethodFLAG == 4  
     [filepath,~,~] = fileparts(handles.Parent1D_folder);
@@ -25,7 +20,7 @@ if handles.MethodFLAG == 1 || handles.MethodFLAG == 4
         parentDir1D_NCD = uigetdir;        
     end
     handles.ParentCPMG_folder = parentDir1D_NCD;     
-    list_of_spectra_1D_CPMG = prepare_spectra_files1D(parentDir1D_NCD);
+    [list_of_spectra_1D_CPMG,~] = prepare_spectra_files1D(parentDir1D_NCD);
     mkdir(fullfile(handles.Results_folder_path,'NCD_filter_figures','region 0.2-0.7 ppm'))
     mkdir(fullfile(handles.Results_folder_path,'NCD_filter_figures','region 0.2-0.5 ppm'))
     mkdir(fullfile(handles.Results_folder_path,'NCD_filter_figures','region 8.0-10.0 ppm'))
@@ -74,7 +69,7 @@ if handles.MethodFLAG == 1 || handles.MethodFLAG == 4
 
                     catch
                         G11 = fullfile(parentDir1D_NCD,list_of_spectra_1D_CPMG{i});
-                        Subfolders = prepare_spectra_files1D(G11);
+                        [Subfolders,~] = prepare_spectra_files1D(G11);
                         G2 = fullfile(G11,Subfolders{1},'pdata','1');
                         W(i,1) = getNMRdata(G2);
                         Y1D(i,:) = W(i,1).Data';                
@@ -134,4 +129,4 @@ if handles.MethodFLAG == 1 || handles.MethodFLAG == 4
 else
     uiwait(msgbox('The selected method does not require macromolecules filtered NMR spectra.','modal'));    
 end
-guidata(hObject, handles);    
+guidata(hObject, handles);   

@@ -1,5 +1,5 @@
 
-function list_of_spectra_1D = prepare_spectra_files1D(Spectra_1D_folder)
+function [list_of_spectra_1D,display_names] = prepare_spectra_files1D(Spectra_1D_folder)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Copyright to Dr. Panteleimon G. Takis, 2022                           % 
@@ -34,15 +34,20 @@ function list_of_spectra_1D = prepare_spectra_files1D(Spectra_1D_folder)
 
 
 
-    list_of_spectra_1D = Take_spectra_folders(Spectra_1D_folder);
+    [list_of_spectra_1D,display_names] = Take_spectra_folders(Spectra_1D_folder);
 
 end
 
-function [Spectra_folders] = Take_spectra_folders(parentDir)
+function [Spectra_folders,display_names] = Take_spectra_folders(parentDir)
 
     files    = dir(parentDir);
     names    = {files.name};
     dirFlags = [files.isdir] & ~strcmp(names, '.') & ~strcmp(names, '..');
     Spectra_folders = transpose(names(dirFlags));
-
+    Index = find(contains(Spectra_folders,'_'));
+    display_names = Spectra_folders;
+    for i = 1:length(Index)
+        K = display_names(Index(i));
+        display_names(Index(i)) = {strrep(char(K{1}),'_',' ')};
+    end
 end
