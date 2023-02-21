@@ -33,7 +33,7 @@ function [NMRdata_Processed] = Process_lb_NMRdata(Folder1r1iprocs,lb_factor)
 %          Imaginary data vectors (NMRdata_Processed.IData)
 %          
 %
-% Last Updated: 12/12/2021  
+% Last Updated: 21/02/2023  
 %
 % Algorithm contains also adapted parts from rbnmr.m function:
 %
@@ -43,8 +43,21 @@ function [NMRdata_Processed] = Process_lb_NMRdata(Folder1r1iprocs,lb_factor)
 
     [NMRdata,Procs,ACQUS,filepath2] = readNMR_real_imag(Folder1r1iprocs);
     fa = fopen(fullfile(filepath2,'fid'),'r');
-    [fid] = fread(fa,'int32','l');
-    fclose(fa);
+    switch ACQUS.BYTORDA
+        case 0 
+            read_bytes='l';
+        case 1
+            read_bytes='b';        
+    end
+    switch ACQUS.DTYPA
+        case 0
+            precision='int32';
+        case 1
+            precision='double';
+        case 2
+            precision='double';
+    end   
+    [fid] = fread(fa,precision,read_bytes);   
     fidreal = fid(1:2:length(fid)).*(2^(Procs.NC_proc));
     fidimag = fid(2:2:length(fid)).*(2^(Procs.NC_proc));
     FID  = complex(fidreal,fidimag);

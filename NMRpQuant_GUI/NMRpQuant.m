@@ -77,7 +77,7 @@ Icon = imresize(Image, [64, 64]);
 
 hM = uimenu('parent',hObject,'Label','Help');
 hM2 = uimenu('parent',hObject,'Label','Downloads/Examples');
-uimenu(hM,'Label','About the toolbox','Callback',@(~,~)msgbox({'NMRpQuant', 'Version: 1.1', 'License: GNU GPL v3',...
+uimenu(hM,'Label','About the toolbox','Callback',@(~,~)msgbox({'NMRpQuant', 'Version: 1.2', 'License: GNU GPL v3',...
     'Author: Dr. Panteleimon G. Takis','Contact: p.takis@imperial.ac.uk',...
     'National Phenome Centre','Imperial College London'},'About','custom',Icon));
 uimenu(hM,'Label','Please also read-cite this article','Callback',@(~,~)web('https://doi.org/10.1021/acs.analchem.1c01618'));
@@ -2656,9 +2656,6 @@ if ~strcmp(get(handles.hZoom,'Enable'), 'on')
     set(handles.ZOOM_Third_ON,'ForegroundColor','green');
     set(handles.ZOOM_Third_OFF,'ForegroundColor','black');
 end
-
-
-
 
 guidata(hObject, handles);
 

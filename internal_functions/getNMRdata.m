@@ -1,21 +1,11 @@
 function [NMRdata] = getNMRdata(Folder1r1iprocs)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Copyright to Dr. Panteleimon G. Takis, 2022                           % 
+% Copyright to Dr. Panteleimon G. Takis, 2019                           % 
 %                                                                       %
 % National Phenome Centre and Imperial Clinical Phenotyping Centre,     %
 % Department of Metabolism, Digestion and Reproduction, IRDB Building,  %
 % Imperial College London, Hammersmith Campus,                          %
 % London, W12 0NN, United Kingdom                                       %
-%                                                                       %
-% This program is distributed in the hope that it will be useful,       %
-% but WITHOUT ANY WARRANTY; without even the implied warranty of        %
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         %
-% GNU General Public License for more details.                          %
-%                                                                       %
-% You should have received a copy of the GNU General Public License     %
-% along with this program.  If not, see <https://www.gnu.org/licenses/>.%
-%                                                                       %    
-% Email: p.takis@imperial.ac.uk                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Reading the real and inaginary part of processed 1D NMR spectra:
@@ -24,13 +14,7 @@ function [NMRdata] = getNMRdata(Folder1r1iprocs)
 % Folder1r1iprocs: The NMR folder containing the '1r', '1i', 'procs' files
 % for each spectrum. 
 %
-% Outputs 
-% NMRdata: Structure containing PPM vector (NMRdata.XAxis), 
-%          Intensity Real (NMRdata.Data) and
-%          Intensity Imaginary data vectors (NMRdata.IData)
-
-%
-% Last Updated: 12/01/2022  
+% Last Updated: 21/02/2023  
 %
 % Algorithm contains also adapted parts from rbnmr.m function:
 %
@@ -39,9 +23,38 @@ function [NMRdata] = getNMRdata(Folder1r1iprocs)
 % 
 
 [NMRdata,Procs,ACQUS,filepath2] = readNMR_real_imag(Folder1r1iprocs);
-try
+SM_temp = gradient(NMRdata.IData',NMRdata.XAxis');
+[~,ii] = find(NMRdata.XAxis' > 2 & NMRdata.XAxis' < 4);
+    
+SM_temp_test  = SM_temp(1,ii);
+SM_temp_test_MAX = max(SM_temp_test);
+SM_temp_test_MIN_abs = abs(min(SM_temp_test));
+if SM_temp_test_MIN_abs > SM_temp_test_MAX
+    NMRdata.IData = -1*NMRdata.IData;
+    Check_phase = 1;
+else
+    Check_phase = 0;
+end
+
+try    
+%     try
     fa = fopen(fullfile(filepath2,'fid'),'r');
-    [fid] = fread(fa,'int32','l');
+    switch ACQUS.BYTORDA
+        case 0 
+            read_bytes='l';
+        case 1
+            read_bytes='b';        
+    end
+    switch ACQUS.DTYPA
+        case 0
+            precision='int32';
+        case 1  %double
+            precision='double';
+        case 2
+            precision='double';
+    end
+    
+    [fid] = fread(fa,precision,read_bytes);    
     fclose(fa);
     fidreal = fid(1:2:length(fid)).*(2^(Procs.NC_proc));
     fidimag = fid(2:2:length(fid)).*(2^(Procs.NC_proc));
@@ -60,14 +73,16 @@ try
     ImagD = -1*(flipud(imag(ImagS)));
     ImagD = (ImagD/(2^-Procs.NC_proc));%(1^Procs.NC_proc);
     REAL = (flipud(real(ImagS)))/(2^-Procs.NC_proc);
-    IMAG = ImagD;
-
+    if Check_phase == 1
+        IMAG = -ImagD;
+    else
+        IMAG = ImagD;
+    end
     [i,~] = find(NMRdata.XAxis > 1 & NMRdata.XAxis < 5);
     TEMP_RE = REAL(i,:);
     TEMP_NMRdata = NMRdata.Data(i,:);
     TEMP_IMAG = IMAG(i,:);
     TEMP_NMRidata = NMRdata.IData(i,:);
-    
     [j,~] = find(TEMP_RE == 0);
     [q,~] = find(TEMP_NMRdata == 0);
     [u,~] = find(TEMP_NMRidata == 0);
@@ -86,17 +101,13 @@ try
     MM_IM = mean(AAAA_IM);
     %MM_IM
     if MM_R == MM_IM
-        FAC = 1;        
     else
-        FAC = MM_R/MM_IM;
-        NMRdata.IData = NMRdata.IData/FAC;
+        NMRdata.IData = NMRdata.IData/(MM_R/MM_IM);
     end
     Procs.NC_proc = 0;
-    NMRdata.FAC = FAC;
 catch
     clearvars NMRdata
     [NMRdata,~,~,~] = readNMR_real_imag(Folder1r1iprocs);
-    NMRdata.FAC = 1;
 end
 
 end
